@@ -1,0 +1,25 @@
+# MCP Server .npmignore
+node_modules/
+dist/
+*.ts
+*.map
+.env
+.env.local
+*.log
+.DS_Store
+.cursor/
+.vscode/
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+tests/
+docs/
+examples/
+src/
+tsconfig.json
+jest.config.js
+test-client.js
+*.md
+!README.md
