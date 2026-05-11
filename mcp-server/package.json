@@ -1,36 +1,16 @@
 {
-  "name": "opengraph-mcp",
+  "name": "opengraph-mcp-server",
   "version": "0.1.0",
-  "private": false,
-  "description": "Model Context Protocol server for OpenGraph AI - extract, query, and visualize semantic knowledge graphs",
-  "keywords": ["mcp", "claude", "ai", "knowledge-graph", "extraction", "semantic"],
-  "author": "OpenGraph AI Contributors",
-  "license": "MIT",
+  "private": true,
+  "description": "Minimal MCP server scaffold for OpenGraph AI",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-org/opengraph-ai.git",
-    "directory": "mcp-server"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "scripts": {
     "dev": "tsx index.ts",
-    "build": "tsc -p . && npm run lint",
-    "start": "node dist/index.js",
-    "test": "node --test dist/tests/**/*.test.js",
-    "test:watch": "tsx --test tests/**/*.test.ts --watch",
-    "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run test"
+    "build": "tsc -p .",
+    "start": "node dist/index.js"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.19.39",
     "tsx": "^4.20.0",
     "typescript": "^5.8.0"
   }
