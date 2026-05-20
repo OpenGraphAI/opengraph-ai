@@ -1,138 +1,115 @@
-"""CLI extract subcommands for OpenGraph AI.
-
-Usage:
-    python -m cli extract text <file>
-"""
-
-import json
-import os
-import re
-from pathlib import Path
+"""CLI extract subcommands for OpenGraph AI (Cloud Run execution mode)."""
 
 import typer
 
-from engine.config import load_env_config
-from engine.graphs.builder import build_graph_from_extraction
-from engine.graphs.visualize import visualize_graph
 from engine.upload.gcp import DEFAULT_GCS_PREFIX
-from engine.upload.gcp import upload_dataset_to_gcs
+from engine.workflows.cloud_run import run_graph_from_gcs_file_via_cloud_run
+from engine.workflows.cloud_run import run_graph_from_gcs_via_cloud_run
+from engine.workflows.graph_from_gcs import DEFAULT_GCS_OUTPUT_PREFIX
 
-app = typer.Typer(help="Extract graph structures from various data sources.")
-
-
-def _dataset_name(source: Path) -> str:
-    """Return dataset name derived from source folder or file."""
-    base = source.name if source.is_dir() else source.stem
-    normalized = re.sub(r"[^a-zA-Z0-9._-]+", "-", base).strip("-._")
-    return normalized or "dataset"
+app = typer.Typer(help="Extract graph structures from GCP data sources via Cloud Run API.")
 
 
-def _resolve_graph_output_path(source: Path, output: str) -> Path:
-    """Place graph JSON inside output/<dataset_name>/ by default."""
-    target = Path(output)
-
-    if target.suffix == "":
-        return target / _dataset_name(source) / "graph.json"
-
-    if target.parent == Path("output"):
-        return target.parent / _dataset_name(source) / target.name
-
-    return target
-
-
-def _resolve_dataset_folder(dataset_name: str, input_root: str) -> Path:
-    """Resolve a dataset folder by name from within the input root."""
-    root = Path(input_root)
-    if not root.exists() or not root.is_dir():
-        raise ValueError(f"Input root not found: {root}")
-
-    matches = sorted(
-        path for path in root.rglob("*") if path.is_dir() and path.name == dataset_name
-    )
-    if not matches:
-        raise ValueError(f"Dataset folder '{dataset_name}' was not found under {root}")
-    if len(matches) > 1:
-        options = ", ".join(str(path) for path in matches)
-        raise ValueError(
-            f"Multiple dataset folders named '{dataset_name}' were found under {root}: {options}"
-        )
-
-    return matches[0]
+def _parse_gcs_uri(uri: str) -> tuple[str, str]:
+    if not uri.startswith("gs://"):
+        raise ValueError("Expected gs:// URI")
+    path = uri[5:]
+    bucket, _, key = path.partition("/")
+    if not bucket or not key:
+        raise ValueError("Invalid gs:// URI")
+    return bucket, key
 
 
 @app.command("text")
 def extract_text(
-    file_path: str = typer.Argument(
+    gcs_file_uri: str = typer.Argument(
         ...,
-        help="Path to the text or PDF file to extract from.",
+        help="GCS file URI for text or PDF input (for example: gs://bucket/opengraph-ai/input/dataset/file.pdf).",
     ),
-    output: str = typer.Option(
-        "./output/graph.json",
-        "--output",
-        "-o",
-        help="Destination graph JSON path (default: ./output/graph.json).",
+    output_gcs_uri: str = typer.Option(
+        ...,
+        "--output-gcs-uri",
+        help="GCS destination base URI (for example: gs://bucket/opengraph-ai/output/dataset).",
+    ),
+    project_id: str | None = typer.Option(
+        None,
+        "--project-id",
+        help="GCP project id override.",
+    ),
+    model: str | None = typer.Option(
+        None,
+        "--model",
+        help="Optional LLM model override.",
+    ),
+    api_url: str | None = typer.Option(
+        None,
+        "--api-url",
+        help="Cloud Run base URL. Defaults to OPENGRAPH_API_URL from env.",
     ),
 ) -> None:
-    """Extract entities and relationships from text/PDF input and emit graph artifacts."""
-    # Lazy import keeps CLI startup fast even when engine deps are missing.
-    from engine.extractors.text_extractor import (  # noqa: PLC0415
-        extract_from_text,
-        load_text_source,
-        write_extraction_artifacts,
-    )
+    """Extract entities and relationships by invoking Cloud Run API for one GCS text/PDF file."""
+    try:
+        source_bucket, source_key = _parse_gcs_uri(gcs_file_uri)
+        output_bucket, output_key = _parse_gcs_uri(output_gcs_uri)
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
-    source = Path(file_path)
-    if not source.exists():
-        typer.echo(f"Error: file not found: {file_path}", err=True)
+    parts = source_key.split("/")
+    if len(parts) < 3:
+        typer.echo(
+            "Error: gcs_file_uri must include input prefix, dataset, and file name.",
+            err=True,
+        )
         raise typer.Exit(code=1)
 
-    typer.echo(f"Loading {source}...")
-    try:
-        text, source_metadata = load_text_source(source)
-    except (RuntimeError, ValueError) as exc:
-        typer.echo(f"Input error: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
+    file_name = parts[-1]
+    dataset = parts[-2]
+    input_prefix = "/".join(parts[:-2])
 
-    typer.echo("Extracting graph — calling LLM...")
-    try:
-        extraction = extract_from_text(text, source_metadata=source_metadata)
-        artifacts = write_extraction_artifacts(
-            extraction,
-            source=source,
-            output_path=output,
-            title=f"{source_metadata['source_name'].replace('-', ' ').title()} Graph",
+    out_parts = output_key.split("/")
+    if len(out_parts) < 2:
+        typer.echo(
+            "Error: output_gcs_uri must include output prefix and dataset folder.",
+            err=True,
         )
-    except EnvironmentError as exc:
-        typer.echo(f"Configuration error: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-    except ValueError as exc:
-        typer.echo(f"Extraction failed (bad LLM response): {exc}", err=True)
+        raise typer.Exit(code=1)
+    output_prefix = "/".join(out_parts[:-1])
+
+    if source_bucket != output_bucket:
+        typer.echo(
+            "Warning: source and output buckets differ; using source bucket for processing.",
+            err=True,
+        )
+
+    try:
+        result = run_graph_from_gcs_file_via_cloud_run(
+            dataset=dataset,
+            file_name=file_name,
+            bucket=source_bucket,
+            input_prefix=input_prefix,
+            output_prefix=output_prefix,
+            project_id=project_id,
+            model=model,
+            api_url=api_url,
+        )
+    except (EnvironmentError, RuntimeError, ValueError) as exc:
+        typer.echo(f"Extraction failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
-    graph_json = json.dumps(extraction, indent=2)
-
-    typer.echo("\nExtracted graph:")
-    typer.echo(graph_json)
-    typer.echo(f"\nSaved graph JSON to {artifacts['json_path']}")
-    typer.echo(f"Saved graph image to {artifacts['graph_path']}")
+    typer.echo("Extraction complete via Cloud Run:")
+    typer.echo(f"  - Source:   {result['source_uri']}")
+    typer.echo(f"  - GCS JSON: {result['gcs_json_uri']}")
+    typer.echo(f"  - GCS PNG:  {result['gcs_png_uri']}")
+    typer.echo(f"  - Entities: {result['entity_count']}")
+    typer.echo(f"  - Relationships: {result['relationship_count']}")
 
 
 @app.command("tables-gcs")
 def extract_tables_gcs(
     dataset_name: str = typer.Argument(
         ...,
-        help="Dataset folder name under input/ to upload and extract from GCS.",
-    ),
-    input_root: str = typer.Option(
-        "./input",
-        "--input-root",
-        help="Root folder containing local dataset directories.",
-    ),
-    output: str = typer.Option(
-        "./output/graph.json",
-        "--output",
-        "-o",
-        help="Destination graph JSON path (default: ./output/graph.json).",
+        help="Dataset folder name already present in GCS under gcs-prefix.",
     ),
     bucket: str | None = typer.Option(
         None,
@@ -147,87 +124,48 @@ def extract_tables_gcs(
     gcs_prefix: str = typer.Option(
         DEFAULT_GCS_PREFIX,
         "--gcs-prefix",
-        help="Base GCS prefix used for dataset uploads.",
+        help="Base GCS prefix that contains dataset folders.",
     ),
-    skip_upload: bool = typer.Option(
-        False,
-        "--skip-upload",
-        help="Skip upload and extract directly from an existing GCS prefix.",
+    output_prefix: str = typer.Option(
+        DEFAULT_GCS_OUTPUT_PREFIX,
+        "--output-prefix",
+        help="Base GCS prefix used for graph artifacts.",
     ),
     model: str | None = typer.Option(
         None,
         "--model",
         help="Optional LLM model override for table extraction.",
     ),
+    schema_view: bool = typer.Option(
+        False,
+        "--schema-view",
+        help="Render schema/entity-type graph view.",
+    ),
+    api_url: str | None = typer.Option(
+        None,
+        "--api-url",
+        help="Cloud Run base URL. Defaults to OPENGRAPH_API_URL from env.",
+    ),
 ) -> None:
-    """Upload a dataset to GCS and run LLM extraction directly from GCS CSV files."""
-    # Lazy import keeps startup fast unless command is used.
-    from engine.extractors.table_extractor import (  # noqa: PLC0415
-        extract_from_tables_gcs,
-    )
-
-    load_env_config()
-    resolved_bucket = bucket or os.environ.get("GCS_BUCKET")
-    resolved_project = project_id or os.environ.get("GCP_PROJECT_ID")
-    if not resolved_bucket:
-        typer.echo("Error: missing GCS_BUCKET. Set env or pass --bucket.", err=True)
-        raise typer.Exit(code=1)
-    if not skip_upload and not resolved_project:
-        typer.echo(
-            "Error: missing GCP_PROJECT_ID. Set env or pass --project-id.",
-            err=True,
-        )
-        raise typer.Exit(code=1)
-
+    """Run table graph extraction via Cloud Run API and write artifacts to GCS."""
     try:
-        source = _resolve_dataset_folder(dataset_name, input_root)
-    except ValueError as exc:
-        typer.echo(f"Error: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-
-    prefix_base = gcs_prefix.strip("/")
-    dataset_prefix = f"{prefix_base}/{source.name}" if prefix_base else source.name
-
-    if not skip_upload:
-        typer.echo(f"Uploading {source} to gs://{resolved_bucket}/{prefix_base}/ ...")
-        try:
-            uploaded = upload_dataset_to_gcs(
-                source,
-                project_id=resolved_project or "",
-                bucket_name=resolved_bucket,
-                prefix=prefix_base,
-            )
-            typer.echo(f"Uploaded {uploaded} file(s) to gs://{resolved_bucket}/{dataset_prefix}")
-        except Exception as exc:
-            typer.echo(f"Upload failed: {exc}", err=True)
-            raise typer.Exit(code=1) from exc
-
-    typer.echo(f"Extracting from gs://{resolved_bucket}/{dataset_prefix} via LLM...")
-    try:
-        extraction = extract_from_tables_gcs(
-            bucket_name=resolved_bucket,
-            prefix=dataset_prefix,
+        result = run_graph_from_gcs_via_cloud_run(
+            dataset=dataset_name,
+            bucket=bucket,
+            input_prefix=gcs_prefix,
+            output_prefix=output_prefix,
             model=model,
-            project_id=resolved_project,
+            project_id=project_id,
+            schema_view=schema_view,
+            api_url=api_url,
         )
     except (EnvironmentError, RuntimeError, ValueError) as exc:
         typer.echo(f"Extraction failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
-    out_path = _resolve_graph_output_path(source, output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(extraction, indent=2), encoding="utf-8")
-
-    graph = build_graph_from_extraction(extraction)
-    graph_path = out_path.with_name("graph.png")
-    saved_graph_path = visualize_graph(
-        graph,
-        str(graph_path),
-        title=f"{_dataset_name(source).replace('-', ' ').title()} Graph",
-    )
-
-    typer.echo("Extraction complete:")
-    typer.echo(f"  - JSON: {out_path.resolve()}")
-    typer.echo(f"  - PNG:  {saved_graph_path}")
-    typer.echo(f"  - Entities: {len(extraction.get('entities', []))}")
-    typer.echo(f"  - Relationships: {len(extraction.get('relationships', []))}")
+    typer.echo("Extraction complete via Cloud Run:")
+    typer.echo(f"  - GCS input: {result['gcs_input_uri']}")
+    typer.echo(f"  - GCS JSON:  {result['gcs_json_uri']}")
+    typer.echo(f"  - GCS PNG:   {result['gcs_png_uri']}")
+    typer.echo(f"  - Entities: {result['entity_count']}")
+    typer.echo(f"  - Relationships: {result['relationship_count']}")

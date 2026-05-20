@@ -14,9 +14,9 @@ from engine.graphs.builder import build_graph_from_extraction
 from engine.graphs.visualize import visualize_graph
 from engine.graphs.visualize import visualize_schema_graph
 from engine.upload.gcp import DEFAULT_GCS_PREFIX
+from engine.workflows.cloud_run import run_graph_from_gcs_via_cloud_run
 from engine.workflows.graph_from_gcs import DEFAULT_GCS_OUTPUT_PREFIX
 from engine.workflows.graph_from_gcs import resolve_output_json_path
-from engine.workflows.graph_from_gcs import run_graph_from_gcs_workflow
 
 app = typer.Typer(help="Store and retrieve extraction graphs from Neo4j AuraDB.")
 
@@ -44,43 +44,12 @@ def push(
         help="Clear existing records for this dataset before upload (default: clear).",
     ),
 ) -> None:
-    """Push extraction JSON nodes/edges into Neo4j AuraDB."""
-    graph_path = Path(graph_json)
-    if not graph_path.exists() or not graph_path.is_file():
-        typer.echo(f"Error: graph JSON file not found: {graph_json}", err=True)
-        raise typer.Exit(code=1)
-
-    try:
-        extraction = json.loads(graph_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        typer.echo(f"Error: invalid JSON file: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-
-    if not isinstance(extraction, dict):
-        typer.echo("Error: extraction payload must be a JSON object.", err=True)
-        raise typer.Exit(code=1)
-    if "entities" not in extraction or "relationships" not in extraction:
-        typer.echo(
-            "Error: extraction payload must include 'entities' and 'relationships'.",
-            err=True,
-        )
-        raise typer.Exit(code=1)
-
-    dataset_name = dataset or _dataset_name_from_json_path(graph_path)
-
-    try:
-        counts = store_extraction_in_neo4j(
-            extraction,
-            dataset=dataset_name,
-            clear_existing=clear_existing,
-        )
-    except (EnvironmentError, RuntimeError, ValueError) as exc:
-        typer.echo(f"Upload to Neo4j failed: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-
+    """Deprecated in GCP-only mode."""
     typer.echo(
-        f"Stored dataset '{dataset_name}' in Neo4j with {counts['node_count']} node(s) and {counts['edge_count']} edge(s)."
+        "Error: graphdb push is disabled in GCP-only mode. Use graphdb from-gcs.",
+        err=True,
     )
+    raise typer.Exit(code=1)
 
 
 @app.command("pull")
@@ -108,41 +77,12 @@ def pull(
         help="Optional graph title for rendered PNG.",
     ),
 ) -> None:
-    """Pull a dataset from Neo4j AuraDB into extraction JSON format."""
-    out_path = resolve_output_json_path(dataset, output)
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    try:
-        extraction = export_extraction_from_neo4j(dataset=dataset)
-    except (EnvironmentError, RuntimeError, ValueError) as exc:
-        typer.echo(f"Export from Neo4j failed: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-
-    out_path.write_text(json.dumps(extraction, indent=2), encoding="utf-8")
-
-    graph_path = Path(graph_output) if graph_output else out_path.with_name("graph.png")
-    graph_path.parent.mkdir(parents=True, exist_ok=True)
-
-    try:
-        graph = build_graph_from_extraction(extraction)
-        renderer = visualize_schema_graph if schema_view else visualize_graph
-        saved_graph_path = renderer(
-            graph,
-            str(graph_path),
-            title=title or f"{dataset.replace('-', ' ').title()} Graph",
-        )
-    except ValueError as exc:
-        typer.echo(f"Graph render failed: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
-
-    entity_count = len(extraction.get("entities", []))
-    relationship_count = len(extraction.get("relationships", []))
-    typer.echo(f"Exported dataset '{dataset}' from Neo4j")
-    typer.echo(f"  - JSON: {out_path.resolve()}")
-    typer.echo(f"  - PNG:  {saved_graph_path}")
-    typer.echo(f"  - Entities: {entity_count}")
-    typer.echo(f"  - Relationships: {relationship_count}")
+    """Deprecated in GCP-only mode."""
+    typer.echo(
+        "Error: graphdb pull is disabled in GCP-only mode. Use graphdb from-gcs.",
+        err=True,
+    )
+    raise typer.Exit(code=1)
 
 
 @app.command("from-gcs")
@@ -163,12 +103,6 @@ def from_gcs(
         "--output-prefix",
         help="Base GCS output prefix for graph artifacts.",
     ),
-    output: str = typer.Option(
-        "./output/graph.json",
-        "--output",
-        "-o",
-        help="Local destination file for exported graph JSON.",
-    ),
     model: str | None = typer.Option(
         None,
         "--model",
@@ -184,23 +118,28 @@ def from_gcs(
         "--schema-view",
         help="Render schema/entity-type graph view instead of full row-level graph.",
     ),
+    api_url: str | None = typer.Option(
+        None,
+        "--api-url",
+        help="Cloud Run base URL. Defaults to OPENGRAPH_API_URL from env.",
+    ),
     print_json: bool = typer.Option(
         True,
         "--print-json/--no-print-json",
         help="Print final Neo4j-exported graph JSON in CLI output.",
     ),
 ) -> None:
-    """Create graph from GCS dataset via LLM, store in Neo4j, and publish artifacts to GCS."""
+    """Create graph from GCS dataset by invoking the Cloud Run graph API."""
     try:
-        result = run_graph_from_gcs_workflow(
+        result = run_graph_from_gcs_via_cloud_run(
             dataset=dataset,
             bucket=bucket,
             input_prefix=input_prefix,
             output_prefix=output_prefix,
-            output=output,
             model=model,
             project_id=project_id,
             schema_view=schema_view,
+            api_url=api_url,
         )
     except (EnvironmentError, RuntimeError, ValueError) as exc:
         typer.echo(f"Workflow failed: {exc}", err=True)
@@ -210,8 +149,6 @@ def from_gcs(
     typer.echo(f"  - GCS input:  {result['gcs_input_uri']}")
     typer.echo(f"  - Neo4j stored nodes: {result['stored_node_count']}")
     typer.echo(f"  - Neo4j stored edges: {result['stored_edge_count']}")
-    typer.echo(f"  - Local JSON: {result['local_json_path']}")
-    typer.echo(f"  - Local PNG:  {result['local_png_path']}")
     typer.echo(f"  - GCS JSON:   {result['gcs_json_uri']}")
     typer.echo(f"  - GCS PNG:    {result['gcs_png_uri']}")
     typer.echo(f"  - Entities: {result['entity_count']}")

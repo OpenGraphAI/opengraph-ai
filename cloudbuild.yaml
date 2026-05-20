@@ -1,9 +1,21 @@
 steps:
   - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -lc
+      - docker pull ${_IMAGE_URI} || true
+
+  - name: gcr.io/cloud-builders/docker
     args:
       - build
+      - --cache-from
+      - ${_IMAGE_URI}
       - -t
       - ${_IMAGE_URI}
       - .
+
 images:
   - ${_IMAGE_URI}
+
+options:
+  machineType: E2_HIGHCPU_8

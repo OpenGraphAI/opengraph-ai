@@ -16,8 +16,6 @@ def test_graph_from_gcs_endpoint_returns_workflow_result(monkeypatch) -> None:
             "gcs_input_uri": "gs://bucket/opengraph-ai/input/DemoSet",
             "gcs_json_uri": "gs://bucket/opengraph-ai/output/DemoSet/graph.json",
             "gcs_png_uri": "gs://bucket/opengraph-ai/output/DemoSet/graph.png",
-            "local_json_path": "/tmp/graph.json",
-            "local_png_path": "/tmp/graph.png",
             "stored_node_count": 1,
             "stored_edge_count": 0,
             "entity_count": 1,

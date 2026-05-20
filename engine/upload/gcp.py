@@ -63,35 +63,12 @@ def upload_dataset_to_gcs(
     bucket_name: str,
     prefix: str = DEFAULT_GCS_PREFIX,
 ) -> int:
-    """Upload a dataset file or folder to GCS and return the uploaded count."""
-    try:
-        from google.auth.exceptions import DefaultCredentialsError
-        from google.cloud import storage
-    except ImportError as exc:
-        raise RuntimeError(
-            "google-cloud-storage is not installed. Install project dependencies first."
-        ) from exc
-
-    try:
-        client = storage.Client(project=project_id)
-    except DefaultCredentialsError as exc:
-        raise RuntimeError(
-            "GCP credentials not found. Run 'gcloud auth application-default login' "
-            "or set GOOGLE_APPLICATION_CREDENTIALS."
-        ) from exc
-
-    bucket = client.bucket(bucket_name)
-    files = iter_source_files(source)
-    uploaded = 0
-
-    for file_path in files:
-        blob_name = destination_blob_name(source, file_path, prefix)
-        blob = bucket.blob(blob_name)
-        blob.upload_from_filename(str(file_path))
-        uploaded += 1
-        print(f"Uploaded {file_path} -> gs://{bucket_name}/{blob_name}")
-
-    return uploaded
+    """Deprecated in GCP-only mode."""
+    del source, project_id, bucket_name, prefix
+    raise RuntimeError(
+        "Local filesystem dataset upload is disabled in GCP-only mode. "
+        "Use upload_file_content_to_gcs() with Claude-provided file content."
+    )
 
 
 def upload_file_to_gcs(
@@ -101,30 +78,12 @@ def upload_file_to_gcs(
     blob_name: str,
     project_id: str | None = None,
 ) -> str:
-    """Upload one local file to GCS and return ``gs://`` URI."""
-    try:
-        from google.auth.exceptions import DefaultCredentialsError
-        from google.cloud import storage
-    except ImportError as exc:
-        raise RuntimeError(
-            "google-cloud-storage is not installed. Install project dependencies first."
-        ) from exc
-
-    if not local_file.exists() or not local_file.is_file():
-        raise ValueError(f"Local file does not exist: {local_file}")
-
-    try:
-        client = storage.Client(project=project_id)
-    except DefaultCredentialsError as exc:
-        raise RuntimeError(
-            "GCP credentials not found. Run 'gcloud auth application-default login' "
-            "or set GOOGLE_APPLICATION_CREDENTIALS."
-        ) from exc
-
-    clean_blob_name = blob_name.strip("/")
-    blob = client.bucket(bucket_name).blob(clean_blob_name)
-    blob.upload_from_filename(str(local_file))
-    return f"gs://{bucket_name}/{clean_blob_name}"
+    """Deprecated in GCP-only mode."""
+    del local_file, bucket_name, blob_name, project_id
+    raise RuntimeError(
+        "upload_file_to_gcs is disabled in GCP-only mode. "
+        "Use upload_file_content_to_gcs()."
+    )
 
 
 def upload_file_content_to_gcs(
@@ -240,59 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the dataset upload CLI."""
-    load_local_env()
-    parser = build_parser()
-    args = parser.parse_args(argv)
-
-    source = Path(args.source)
-    if not source.exists():
-        print(f"Error: source not found: {source}", file=sys.stderr)
-        return 1
-
-    project_id = args.project_id or os.environ.get("GCP_PROJECT_ID")
-    bucket_name = args.bucket or os.environ.get("GCS_BUCKET")
-    prefix = args.prefix or os.environ.get("GCS_PREFIX", DEFAULT_GCS_PREFIX)
-    credentials_path = args.credentials or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-    if credentials_path:
-        expanded_credentials_path = str(Path(credentials_path).expanduser())
-        if not Path(expanded_credentials_path).exists():
-            print(
-                f"Error: credentials file not found: {expanded_credentials_path}",
-                file=sys.stderr,
-            )
-            return 1
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = expanded_credentials_path
-
-    if not project_id:
-        print(
-            "Error: missing GCP_PROJECT_ID. Set it in .env.local or pass --project-id.",
-            file=sys.stderr,
-        )
-        return 1
-    if not bucket_name:
-        print(
-            "Error: missing GCS_BUCKET. Set it in .env.local or pass --bucket.",
-            file=sys.stderr,
-        )
-        return 1
-
-    try:
-        uploaded = upload_dataset_to_gcs(
-            source,
-            project_id=project_id,
-            bucket_name=bucket_name,
-            prefix=prefix,
-        )
-    except Exception as exc:
-        print(f"Upload failed: {exc}", file=sys.stderr)
-        if not credentials_path:
-            print(
-                "Tip: set GOOGLE_APPLICATION_CREDENTIALS in .env.local or pass --credentials /path/to/key.json",
-                file=sys.stderr,
-            )
-        return 1
-
-    print(f"Done. Uploaded {uploaded} file(s) to gs://{bucket_name}/{prefix.strip('/')}/")
-    return 0
+    """Deprecated in GCP-only mode."""
+    del argv
+    print(
+        "Error: local upload CLI is disabled in GCP-only mode. "
+        "Use MCP upload_data_to_gcp tool.",
+        file=sys.stderr,
+    )
+    return 1

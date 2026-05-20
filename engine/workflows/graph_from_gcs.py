@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import tempfile
 from typing import Any
 
 from engine.config import load_env_config
@@ -15,7 +15,7 @@ from engine.graphs.builder import build_graph_from_extraction
 from engine.graphs.visualize import visualize_graph
 from engine.graphs.visualize import visualize_schema_graph
 from engine.upload.gcp import DEFAULT_GCS_PREFIX
-from engine.upload.gcp import upload_file_to_gcs
+from engine.upload.gcp import upload_file_content_to_gcs
 
 DEFAULT_GCS_OUTPUT_PREFIX = "opengraph-ai/output"
 
@@ -36,7 +36,6 @@ def run_graph_from_gcs_workflow(
     bucket: str | None = None,
     input_prefix: str = DEFAULT_GCS_PREFIX,
     output_prefix: str = DEFAULT_GCS_OUTPUT_PREFIX,
-    output: str = "./output/graph.json",
     model: str | None = None,
     project_id: str | None = None,
     schema_view: bool = False,
@@ -67,37 +66,45 @@ def run_graph_from_gcs_workflow(
 
     neo4j_payload = export_extraction_from_neo4j(dataset=dataset)
 
-    out_path = resolve_output_json_path(dataset, output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(neo4j_payload, indent=2), encoding="utf-8")
+    json_content = json.dumps(neo4j_payload, indent=2).encode("utf-8")
 
-    graph_path = out_path.with_name("graph.png")
     graph = build_graph_from_extraction(neo4j_payload)
     renderer = visualize_schema_graph if schema_view else visualize_graph
-    saved_graph_path = renderer(
-        graph,
-        str(graph_path),
-        title=f"{dataset.replace('-', ' ').replace('+', ' ').title()} Graph",
-    )
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".png", delete=False) as tmp:
+        temp_png_path = tmp.name
+    try:
+        saved_graph_path = renderer(
+            graph,
+            temp_png_path,
+            title=f"{dataset.replace('-', ' ').replace('+', ' ').title()} Graph",
+        )
+        png_content = saved_graph_path.read_bytes()
+    finally:
+        try:
+            os.unlink(temp_png_path)
+        except OSError:
+            pass
 
     clean_output = output_prefix.strip("/")
     json_blob_name = (
-        f"{clean_output}/{dataset}/{out_path.name}" if clean_output else f"{dataset}/{out_path.name}"
+        f"{clean_output}/{dataset}/graph.json" if clean_output else f"{dataset}/graph.json"
     )
     png_blob_name = (
-        f"{clean_output}/{dataset}/{saved_graph_path.name}"
+        f"{clean_output}/{dataset}/graph.png"
         if clean_output
-        else f"{dataset}/{saved_graph_path.name}"
+        else f"{dataset}/graph.png"
     )
 
-    json_gcs_uri = upload_file_to_gcs(
-        out_path,
+    json_gcs_uri = upload_file_content_to_gcs(
+        json_content,
+        filename="graph.json",
         bucket_name=resolved_bucket,
         blob_name=json_blob_name,
         project_id=resolved_project,
     )
-    png_gcs_uri = upload_file_to_gcs(
-        saved_graph_path,
+    png_gcs_uri = upload_file_content_to_gcs(
+        png_content,
+        filename="graph.png",
         bucket_name=resolved_bucket,
         blob_name=png_blob_name,
         project_id=resolved_project,
@@ -111,8 +118,6 @@ def run_graph_from_gcs_workflow(
         "gcs_input_uri": f"gs://{resolved_bucket}/{dataset_input_prefix}",
         "gcs_json_uri": json_gcs_uri,
         "gcs_png_uri": png_gcs_uri,
-        "local_json_path": str(out_path.resolve()),
-        "local_png_path": str(saved_graph_path),
         "stored_node_count": stored_counts["node_count"],
         "stored_edge_count": stored_counts["edge_count"],
         "entity_count": entity_count,

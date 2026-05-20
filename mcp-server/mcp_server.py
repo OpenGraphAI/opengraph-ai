@@ -11,22 +11,18 @@ from __future__ import annotations
 
 import base64
 import os
-import tempfile
 from pathlib import Path
+from typing import Annotated
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
 from engine.config import load_env_config
-from engine.connectors.neo4j_aura import export_extraction_from_neo4j
-from engine.connectors.neo4j_aura import store_extraction_in_neo4j
-from engine.extractors.text_extractor import extract_from_text
-from engine.extractors.text_extractor import load_text_source
-from engine.extractors.text_extractor import write_extraction_artifacts
 from engine.upload.gcp import download_file_from_gcs
 from engine.upload.gcp import upload_file_content_to_gcs
-from engine.workflows.graph_from_gcs import run_graph_from_gcs_workflow
+from engine.workflows.cloud_run import run_graph_from_gcs_file_via_cloud_run
+from engine.workflows.cloud_run import run_graph_from_gcs_via_cloud_run
 
 mcp = FastMCP("OpenGraphMCP", log_level="ERROR")
 
@@ -97,10 +93,10 @@ def _list_gcs_objects(bucket_name: str, prefix: str, project_id: str) -> list[di
     description="Return current data on GCP (text, pdf, dataset files) under input/output prefixes.",
 )
 def list_gcp_data(
-    bucket: str | None = Field(default=None, description="GCS bucket name (defaults to env)."),
-    project_id: str | None = Field(default=None, description="GCP project id (defaults to env)."),
-    input_prefix: str = Field(default="opengraph-ai/input", description="GCS input prefix."),
-    output_prefix: str = Field(default="opengraph-ai/output", description="GCS output prefix."),
+    bucket: Annotated[str | None, Field(description="GCS bucket name (defaults to env).")]=None,
+    project_id: Annotated[str | None, Field(description="GCP project id (defaults to env).")]=None,
+    input_prefix: Annotated[str, Field(description="GCS input prefix.")]="opengraph-ai/input",
+    output_prefix: Annotated[str, Field(description="GCS output prefix.")]="opengraph-ai/output",
 ) -> dict[str, Any]:
     try:
         resolved_bucket, resolved_project = _resolve_gcp(bucket, project_id)
@@ -125,12 +121,12 @@ def list_gcp_data(
     description="Upload dropped Claude data (text/pdf/csv) to GCP.",
 )
 def upload_data_to_gcp(
-    dataset_name: str = Field(description="Dataset/folder key to store the file under."),
-    filename: str = Field(description="Original filename, e.g. report.pdf or table.csv."),
-    file_content_base64: str = Field(description="Base64-encoded file content from Claude."),
-    bucket: str | None = Field(default=None, description="GCS bucket name (defaults to env)."),
-    project_id: str | None = Field(default=None, description="GCP project id (defaults to env)."),
-    input_prefix: str = Field(default="opengraph-ai/input", description="Base GCS input prefix."),
+    dataset_name: Annotated[str, Field(description="Dataset/folder key to store the file under.")],
+    filename: Annotated[str, Field(description="Original filename, e.g. report.pdf or table.csv.")],
+    file_content_base64: Annotated[str, Field(description="Base64-encoded file content from Claude.")],
+    bucket: Annotated[str | None, Field(description="GCS bucket name (defaults to env).")]=None,
+    project_id: Annotated[str | None, Field(description="GCP project id (defaults to env).")]=None,
+    input_prefix: Annotated[str, Field(description="Base GCS input prefix.")]="opengraph-ai/input",
 ) -> dict[str, Any]:
     try:
         resolved_bucket, resolved_project = _resolve_gcp(bucket, project_id)
@@ -161,33 +157,31 @@ def upload_data_to_gcp(
     description="Extract graph from data already on GCP, save graph to GCP, and return PNG preview for Claude.",
 )
 def extract_graph_from_gcp(
-    dataset_name: str = Field(description="Dataset key/folder under GCS input prefix."),
-    data_type: str = Field(description="One of: text, pdf, dataset."),
-    filename: str | None = Field(default=None, description="Required for text/pdf: file name under dataset folder."),
-    bucket: str | None = Field(default=None, description="GCS bucket name (defaults to env)."),
-    project_id: str | None = Field(default=None, description="GCP project id (defaults to env)."),
-    input_prefix: str = Field(default="opengraph-ai/input", description="GCS input prefix."),
-    output_prefix: str = Field(default="opengraph-ai/output", description="GCS output prefix."),
-    model: str | None = Field(default=None, description="Optional LLM model override."),
-    schema_view: bool = Field(default=False, description="Schema view for dataset graph rendering."),
+    dataset_name: Annotated[str, Field(description="Dataset key/folder under GCS input prefix.")],
+    data_type: Annotated[str, Field(description="One of: text, pdf, dataset.")],
+    filename: Annotated[str | None, Field(description="Required for text/pdf: file name under dataset folder.")]=None,
+    bucket: Annotated[str | None, Field(description="GCS bucket name (defaults to env).")]=None,
+    project_id: Annotated[str | None, Field(description="GCP project id (defaults to env).")]=None,
+    input_prefix: Annotated[str, Field(description="GCS input prefix.")]="opengraph-ai/input",
+    output_prefix: Annotated[str, Field(description="GCS output prefix.")]="opengraph-ai/output",
+    model: Annotated[str | None, Field(description="Optional LLM model override.")]=None,
+    schema_view: Annotated[bool, Field(description="Schema view for dataset graph rendering.")]=False,
+    api_url: Annotated[str | None, Field(description="Cloud Run base URL override.")]=None,
 ) -> dict[str, Any]:
     try:
         resolved_bucket, resolved_project = _resolve_gcp(bucket, project_id)
         kind = data_type.strip().lower()
 
         if kind == "dataset":
-            temp_output_json = (
-                Path(tempfile.gettempdir()) / "opengraph-mcp" / dataset_name / "graph.json"
-            )
-            workflow = run_graph_from_gcs_workflow(
+            workflow = run_graph_from_gcs_via_cloud_run(
                 dataset=dataset_name,
                 bucket=resolved_bucket,
                 input_prefix=input_prefix,
                 output_prefix=output_prefix,
-                output=str(temp_output_json),
                 project_id=resolved_project,
                 model=model,
                 schema_view=schema_view,
+                api_url=api_url,
             )
             png_bytes = download_file_from_gcs(
                 workflow["gcs_png_uri"],
@@ -210,36 +204,27 @@ def extract_graph_from_gcp(
         if not filename:
             raise ValueError("filename is required for text/pdf extraction")
 
-        clean_input = input_prefix.strip("/")
-        source_uri = f"gs://{resolved_bucket}/{clean_input}/{dataset_name}/{filename}" if clean_input else f"gs://{resolved_bucket}/{dataset_name}/{filename}"
-
-        text, metadata = load_text_source(source_uri)
-        extraction = extract_from_text(text, source_metadata=metadata)
-
-        clean_output = output_prefix.strip("/")
-        output_base = (
-            f"gs://{resolved_bucket}/{clean_output}/{dataset_name}" if clean_output else f"gs://{resolved_bucket}/{dataset_name}"
+        workflow = run_graph_from_gcs_file_via_cloud_run(
+            dataset=dataset_name,
+            file_name=filename,
+            bucket=resolved_bucket,
+            input_prefix=input_prefix,
+            output_prefix=output_prefix,
+            project_id=resolved_project,
+            model=model,
+            api_url=api_url,
         )
-        artifacts = write_extraction_artifacts(
-            extraction,
-            source=source_uri,
-            output_gcs_uri=output_base,
-            title=f"{dataset_name.replace('-', ' ').replace('+', ' ').title()} Graph",
-        )
-
-        store_extraction_in_neo4j(extraction, dataset=dataset_name, clear_existing=True)
-        graph_json = export_extraction_from_neo4j(dataset=dataset_name)
-        png_bytes = download_file_from_gcs(str(artifacts["graph_path"]), project_id=resolved_project)
+        png_bytes = download_file_from_gcs(workflow["gcs_png_uri"], project_id=resolved_project)
 
         return {
             "ok": True,
             "mode": kind,
             "dataset": dataset_name,
-            "source_uri": source_uri,
-            "gcs_json_uri": str(artifacts["json_path"]),
-            "gcs_png_uri": str(artifacts["graph_path"]),
-            "entity_count": len(graph_json.get("entities", [])),
-            "relationship_count": len(graph_json.get("relationships", [])),
+            "source_uri": workflow["source_uri"],
+            "gcs_json_uri": workflow["gcs_json_uri"],
+            "gcs_png_uri": workflow["gcs_png_uri"],
+            "entity_count": workflow["entity_count"],
+            "relationship_count": workflow["relationship_count"],
             "png_base64": base64.b64encode(png_bytes).decode("utf-8"),
             "png_mime_type": "image/png",
         }
@@ -252,16 +237,17 @@ def extract_graph_from_gcp(
     description="Upload dropped Claude file to GCP, extract graph, save artifacts to GCP, and return PNG in one step.",
 )
 def full_upload_and_extract(
-    dataset_name: str = Field(description="Dataset/folder key."),
-    filename: str = Field(description="Original filename."),
-    file_content_base64: str = Field(description="Base64-encoded file bytes from Claude."),
-    data_type: str | None = Field(default=None, description="Optional override: text, pdf, dataset."),
-    bucket: str | None = Field(default=None, description="GCS bucket name (defaults to env)."),
-    project_id: str | None = Field(default=None, description="GCP project id (defaults to env)."),
-    input_prefix: str = Field(default="opengraph-ai/input", description="GCS input prefix."),
-    output_prefix: str = Field(default="opengraph-ai/output", description="GCS output prefix."),
-    model: str | None = Field(default=None, description="Optional LLM model override."),
-    schema_view: bool = Field(default=False, description="Schema view for dataset graph rendering."),
+    dataset_name: Annotated[str, Field(description="Dataset/folder key.")],
+    filename: Annotated[str, Field(description="Original filename.")],
+    file_content_base64: Annotated[str, Field(description="Base64-encoded file bytes from Claude.")],
+    data_type: Annotated[str | None, Field(description="Optional override: text, pdf, dataset.")]=None,
+    bucket: Annotated[str | None, Field(description="GCS bucket name (defaults to env).")]=None,
+    project_id: Annotated[str | None, Field(description="GCP project id (defaults to env).")]=None,
+    input_prefix: Annotated[str, Field(description="GCS input prefix.")]="opengraph-ai/input",
+    output_prefix: Annotated[str, Field(description="GCS output prefix.")]="opengraph-ai/output",
+    model: Annotated[str | None, Field(description="Optional LLM model override.")]=None,
+    schema_view: Annotated[bool, Field(description="Schema view for dataset graph rendering.")]=False,
+    api_url: Annotated[str | None, Field(description="Cloud Run base URL override.")]=None,
 ) -> dict[str, Any]:
     upload_result = upload_data_to_gcp(
         dataset_name=dataset_name,
@@ -285,6 +271,7 @@ def full_upload_and_extract(
         output_prefix=output_prefix,
         model=model,
         schema_view=schema_view,
+        api_url=api_url,
     )
     if not extract_result.get("ok"):
         return {
