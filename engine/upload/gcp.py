@@ -127,6 +127,80 @@ def upload_file_to_gcs(
     return f"gs://{bucket_name}/{clean_blob_name}"
 
 
+def upload_file_content_to_gcs(
+    file_content: bytes,
+    *,
+    filename: str,
+    bucket_name: str,
+    blob_name: str,
+    project_id: str | None = None,
+) -> str:
+    """Upload file bytes directly to GCS and return ``gs://`` URI.
+    
+    This is used when Claude uploads files directly without a local filesystem path.
+    """
+    try:
+        from google.auth.exceptions import DefaultCredentialsError
+        from google.cloud import storage
+    except ImportError as exc:
+        raise RuntimeError(
+            "google-cloud-storage is not installed. Install project dependencies first."
+        ) from exc
+
+    try:
+        client = storage.Client(project=project_id)
+    except DefaultCredentialsError as exc:
+        raise RuntimeError(
+            "GCP credentials not found. Run 'gcloud auth application-default login' "
+            "or set GOOGLE_APPLICATION_CREDENTIALS."
+        ) from exc
+
+    clean_blob_name = blob_name.strip("/")
+    blob = client.bucket(bucket_name).blob(clean_blob_name)
+    blob.upload_from_string(file_content)
+    return f"gs://{bucket_name}/{clean_blob_name}"
+
+
+def download_file_from_gcs(
+    gcs_uri: str,
+    *,
+    project_id: str | None = None,
+) -> bytes:
+    """Download file content from GCS by gs:// URI and return bytes.
+    
+    Parses gs://bucket/blob/path URIs and downloads the content.
+    """
+    try:
+        from google.auth.exceptions import DefaultCredentialsError
+        from google.cloud import storage
+    except ImportError as exc:
+        raise RuntimeError(
+            "google-cloud-storage is not installed. Install project dependencies first."
+        ) from exc
+
+    # Parse gs://bucket/path format
+    if not gcs_uri.startswith("gs://"):
+        raise ValueError(f"Expected gs:// URI, got: {gcs_uri}")
+
+    # Remove gs:// prefix
+    path_part = gcs_uri[5:]
+    bucket_name, _, blob_name = path_part.partition("/")
+
+    if not bucket_name or not blob_name:
+        raise ValueError(f"Invalid GCS URI format: {gcs_uri}")
+
+    try:
+        client = storage.Client(project=project_id)
+    except DefaultCredentialsError as exc:
+        raise RuntimeError(
+            "GCP credentials not found. Run 'gcloud auth application-default login' "
+            "or set GOOGLE_APPLICATION_CREDENTIALS."
+        ) from exc
+
+    blob = client.bucket(bucket_name).blob(blob_name)
+    return blob.download_as_bytes()
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Create the CLI parser for dataset uploads."""
     parser = argparse.ArgumentParser(

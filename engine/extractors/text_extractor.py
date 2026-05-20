@@ -23,6 +23,8 @@ from engine.config import get_optional_env
 from engine.graphs.builder import build_graph_from_extraction
 from engine.graphs.visualize import visualize_graph
 from engine.llm.provider import call_llm
+from engine.upload.gcp import download_file_from_gcs
+from engine.upload.gcp import upload_file_to_gcs
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +105,32 @@ def load_text_source(source: str | Path) -> tuple[str, dict[str, str]]:
     """Read a supported source file and return plain text plus source metadata.
 
     Supported inputs currently include:
-    - `.txt`, `.md`, and other plain-text files (including demo files in `examples/`)
-    - user-uploaded `.pdf` files
+    - Local `.txt`, `.md`, and other plain-text files
+    - Local user-uploaded `.pdf` files
+    - GCS files at ``gs://bucket/path/to/file``
     """
+    source_str = str(source)
+    
+    # Handle GCS URIs
+    if source_str.startswith("gs://"):
+        try:
+            file_content = download_file_from_gcs(source_str)
+            text = file_content.decode("utf-8", errors="ignore").strip()
+            if not text:
+                raise ValueError(f"No readable text found in GCS file: {source_str}")
+            
+            source_name = Path(source_str).stem  # Extract filename from gs:// path
+            metadata = {
+                "source_name": source_name,
+                "source_path": source_str,
+                "source_type": "text",
+                "source_location": "gcs",
+            }
+            return text, metadata
+        except Exception as exc:
+            raise ValueError(f"Failed to read GCS file {source_str}: {exc}") from exc
+    
+    # Handle local files
     path = Path(source)
     if not path.exists() or not path.is_file():
         raise ValueError(f"Text source does not exist or is not a file: {source}")
@@ -125,6 +150,7 @@ def load_text_source(source: str | Path) -> tuple[str, dict[str, str]]:
         "source_name": _dataset_name(path),
         "source_path": str(path),
         "source_type": source_type,
+        "source_location": "local",
     }
     return cleaned_text, metadata
 
@@ -447,15 +473,19 @@ def write_extraction_artifacts(
     *,
     source: str | Path | None = None,
     output_path: str | Path = "./output/graph.json",
+    output_gcs_uri: str | None = None,
     title: str | None = None,
-) -> dict[str, Path]:
-    """Persist extraction JSON and a rendered graph image to the output folder."""
+) -> dict[str, str | Path]:
+    """Persist extraction JSON and rendered graph image.
+    
+    Can write to either local filesystem or GCS:
+    - If output_gcs_uri is provided, writes to GCS and returns gs:// URIs
+    - Otherwise writes locally to output_path and returns local paths
+    """
     source_path = Path(source) if source is not None else None
-    json_path = _resolve_output_path(source_path, output_path)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-
     payload = dict(extraction)
     payload.setdefault("metadata", {})
+    
     if source_path is not None:
         payload["metadata"].setdefault("source_name", _dataset_name(source_path))
         payload["metadata"].setdefault("source_path", str(source_path))
@@ -464,6 +494,73 @@ def write_extraction_artifacts(
             "pdf" if source_path.suffix.lower() == ".pdf" else "text",
         )
 
+    # Write to GCS if URI provided
+    if output_gcs_uri:
+        import os
+        import tempfile
+        from engine.upload.gcp import upload_file_content_to_gcs
+        
+        # Prepare JSON content
+        json_content = json.dumps(payload, indent=2).encode("utf-8")
+        
+        # Build GCS paths for JSON and PNG
+        gcs_json_uri = output_gcs_uri.rstrip("/") + "/graph.json"
+        gcs_png_uri = output_gcs_uri.rstrip("/") + "/graph.png"
+        
+        # Extract bucket and blob names from GCS URIs
+        def parse_gcs_uri(uri: str) -> tuple[str, str]:
+            if not uri.startswith("gs://"):
+                raise ValueError(f"Invalid GCS URI: {uri}")
+            path_part = uri[5:]
+            bucket, _, blob = path_part.partition("/")
+            return bucket, blob
+        
+        bucket, json_blob = parse_gcs_uri(gcs_json_uri)
+        project_id = os.environ.get("GCP_PROJECT_ID")
+        
+        # Upload JSON to GCS
+        upload_file_content_to_gcs(
+            json_content,
+            filename="graph.json",
+            bucket_name=bucket,
+            blob_name=json_blob,
+            project_id=project_id,
+        )
+        
+        # Create graph and save PNG temporarily
+        graph = build_graph_from_extraction(payload)
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".png", delete=False) as tmp:
+            tmp_png_path = Path(tmp.name)
+        
+        try:
+            saved_graph_path = visualize_graph(
+                graph,
+                str(tmp_png_path),
+                title=title or f"{payload['metadata'].get('source_name', 'Text').title()} Graph",
+            )
+            
+            # Read PNG and upload to GCS
+            png_content = saved_graph_path.read_bytes()
+            _, png_blob = parse_gcs_uri(gcs_png_uri)
+            upload_file_content_to_gcs(
+                png_content,
+                filename="graph.png",
+                bucket_name=bucket,
+                blob_name=png_blob,
+                project_id=project_id,
+            )
+        finally:
+            if tmp_png_path.exists():
+                tmp_png_path.unlink()
+        
+        return {
+            "json_path": gcs_json_uri,
+            "graph_path": gcs_png_uri,
+        }
+    
+    # Default: write locally
+    json_path = _resolve_output_path(source_path, output_path)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     graph = build_graph_from_extraction(payload)
