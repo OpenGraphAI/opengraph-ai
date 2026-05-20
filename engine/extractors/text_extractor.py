@@ -14,6 +14,7 @@ import json
 import logging
 import re
 from collections.abc import Callable
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,8 @@ from engine.config import get_optional_env
 from engine.graphs.builder import build_graph_from_extraction
 from engine.graphs.visualize import visualize_graph
 from engine.llm.provider import call_llm
+from engine.upload.gcp import download_file_from_gcs
+from engine.upload.gcp import upload_file_to_gcs
 
 logger = logging.getLogger(__name__)
 
@@ -53,20 +56,6 @@ def _dataset_name(source: Path) -> str:
     """Return dataset name derived from a file path."""
     normalized = re.sub(r"[^a-zA-Z0-9._-]+", "-", source.stem).strip("-._")
     return normalized or "dataset"
-
-
-def _resolve_output_path(source: Path | None, output_path: str | Path) -> Path:
-    """Place graph JSON inside `output/<dataset_name>/` by default."""
-    target = Path(output_path)
-
-    if target.suffix == "":
-        dataset_name = _dataset_name(source) if source is not None else "dataset"
-        return target / dataset_name / "graph.json"
-
-    if source is not None and target.parent == Path("output"):
-        return target.parent / _dataset_name(source) / target.name
-
-    return target
 
 
 # ---------------------------------------------------------------------------
@@ -103,30 +92,47 @@ def load_text_source(source: str | Path) -> tuple[str, dict[str, str]]:
     """Read a supported source file and return plain text plus source metadata.
 
     Supported inputs currently include:
-    - `.txt`, `.md`, and other plain-text files (including demo files in `examples/`)
-    - user-uploaded `.pdf` files
+    - GCS files at ``gs://bucket/path/to/file``
     """
-    path = Path(source)
-    if not path.exists() or not path.is_file():
-        raise ValueError(f"Text source does not exist or is not a file: {source}")
+    source_str = str(source)
+    
+    # Handle GCS URIs
+    if source_str.startswith("gs://"):
+        try:
+            file_content = download_file_from_gcs(source_str)
+            suffix = Path(source_str).suffix.lower()
+            if suffix == ".pdf":
+                global PdfReader
+                if PdfReader is None:
+                    try:
+                        PdfReader = importlib.import_module("pypdf").PdfReader
+                    except ImportError as exc:
+                        raise RuntimeError(
+                            "PDF support requires the optional dependency `pypdf`. "
+                            "Install project dependencies before extracting from PDFs."
+                        ) from exc
+                reader = PdfReader(BytesIO(file_content))
+                pages = [(page.extract_text() or "").strip() for page in reader.pages]
+                text = "\n\n".join(page for page in pages if page).strip()
+                source_type = "pdf"
+            else:
+                text = file_content.decode("utf-8", errors="ignore").strip()
+                source_type = "text"
+            if not text:
+                raise ValueError(f"No readable text found in GCS file: {source_str}")
+            
+            source_name = Path(source_str).stem  # Extract filename from gs:// path
+            metadata = {
+                "source_name": source_name,
+                "source_path": source_str,
+                "source_type": source_type,
+                "source_location": "gcs",
+            }
+            return text, metadata
+        except Exception as exc:
+            raise ValueError(f"Failed to read GCS file {source_str}: {exc}") from exc
 
-    if path.suffix.lower() == ".pdf":
-        text = _read_pdf_file(path)
-        source_type = "pdf"
-    else:
-        text = _read_text_file(path)
-        source_type = "text"
-
-    cleaned_text = text.strip()
-    if not cleaned_text:
-        raise ValueError(f"No readable text found in source: {path}")
-
-    metadata = {
-        "source_name": _dataset_name(path),
-        "source_path": str(path),
-        "source_type": source_type,
-    }
-    return cleaned_text, metadata
+    raise ValueError("Only GCS sources are supported in GCP-only mode (expected gs:// URI).")
 
 
 # ---------------------------------------------------------------------------
@@ -446,16 +452,18 @@ def write_extraction_artifacts(
     extraction: dict[str, Any],
     *,
     source: str | Path | None = None,
-    output_path: str | Path = "./output/graph.json",
+    output_gcs_uri: str,
     title: str | None = None,
-) -> dict[str, Path]:
-    """Persist extraction JSON and a rendered graph image to the output folder."""
-    source_path = Path(source) if source is not None else None
-    json_path = _resolve_output_path(source_path, output_path)
-    json_path.parent.mkdir(parents=True, exist_ok=True)
+) -> dict[str, str | Path]:
+    """Persist extraction JSON and rendered graph image.
 
+    GCP-only mode:
+    - Writes JSON and PNG artifacts to GCS and returns gs:// URIs.
+    """
+    source_path = Path(source) if source is not None else None
     payload = dict(extraction)
     payload.setdefault("metadata", {})
+    
     if source_path is not None:
         payload["metadata"].setdefault("source_name", _dataset_name(source_path))
         payload["metadata"].setdefault("source_path", str(source_path))
@@ -464,17 +472,64 @@ def write_extraction_artifacts(
             "pdf" if source_path.suffix.lower() == ".pdf" else "text",
         )
 
-    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-
-    graph = build_graph_from_extraction(payload)
-    graph_path = json_path.with_name("graph.png")
-    saved_graph_path = visualize_graph(
-        graph,
-        str(graph_path),
-        title=title or f"{payload['metadata'].get('source_name', 'Text').title()} Graph",
+    import os
+    import tempfile
+    from engine.upload.gcp import upload_file_content_to_gcs
+        
+    # Prepare JSON content
+    json_content = json.dumps(payload, indent=2).encode("utf-8")
+        
+    # Build GCS paths for JSON and PNG
+    gcs_json_uri = output_gcs_uri.rstrip("/") + "/graph.json"
+    gcs_png_uri = output_gcs_uri.rstrip("/") + "/graph.png"
+        
+    # Extract bucket and blob names from GCS URIs
+    def parse_gcs_uri(uri: str) -> tuple[str, str]:
+        if not uri.startswith("gs://"):
+            raise ValueError(f"Invalid GCS URI: {uri}")
+        path_part = uri[5:]
+        bucket, _, blob = path_part.partition("/")
+        return bucket, blob
+        
+    bucket, json_blob = parse_gcs_uri(gcs_json_uri)
+    project_id = os.environ.get("GCP_PROJECT_ID")
+        
+    # Upload JSON to GCS
+    upload_file_content_to_gcs(
+        json_content,
+        filename="graph.json",
+        bucket_name=bucket,
+        blob_name=json_blob,
+        project_id=project_id,
     )
+        
+    # Create graph and save PNG temporarily
+    graph = build_graph_from_extraction(payload)
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".png", delete=False) as tmp:
+        tmp_png_path = Path(tmp.name)
+        
+    try:
+        saved_graph_path = visualize_graph(
+            graph,
+            str(tmp_png_path),
+            title=title or f"{payload['metadata'].get('source_name', 'Text').title()} Graph",
+        )
+
+        # Read PNG and upload to GCS
+        png_content = saved_graph_path.read_bytes()
+        _, png_blob = parse_gcs_uri(gcs_png_uri)
+        upload_file_content_to_gcs(
+            png_content,
+            filename="graph.png",
+            bucket_name=bucket,
+            blob_name=png_blob,
+            project_id=project_id,
+        )
+    finally:
+        if tmp_png_path.exists():
+            tmp_png_path.unlink()
 
     return {
-        "json_path": json_path.resolve(),
-        "graph_path": saved_graph_path,
+        "json_path": gcs_json_uri,
+        "graph_path": gcs_png_uri,
     }

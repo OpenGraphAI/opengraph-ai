@@ -61,80 +61,35 @@ def test_graphdb_push_uses_dataset_and_calls_store(monkeypatch, tmp_path: Path) 
         encoding="utf-8",
     )
 
-    captured: dict[str, object] = {}
-
-    def fake_store(extraction: dict, *, dataset: str, clear_existing: bool):
-        captured["extraction"] = extraction
-        captured["dataset"] = dataset
-        captured["clear_existing"] = clear_existing
-        return {"node_count": 1, "edge_count": 0}
-
-    monkeypatch.setattr("cli.commands.graphdb.store_extraction_in_neo4j", fake_store)
-
     result = runner.invoke(
         get_command(cli_app),
         ["graphdb", "push", str(graph_path)],
     )
 
-    assert result.exit_code == 0, result.stdout
-    assert captured["dataset"] == "DemoSet"
-    assert captured["clear_existing"] is True
+    assert result.exit_code == 1, result.stdout
+    assert "disabled in GCP-only mode" in (result.output or "")
 
 
 def test_graphdb_pull_writes_output(monkeypatch, tmp_path: Path) -> None:
-    def fake_export(*, dataset: str):
-        assert dataset == "DemoSet"
-        return {
-            "entities": [{"id": "n1", "label": "Node", "type": "concept"}],
-            "relationships": [],
-            "metadata": {"dataset": dataset},
-        }
-
-    monkeypatch.setattr("cli.commands.graphdb.export_extraction_from_neo4j", fake_export)
-    monkeypatch.setattr(
-        "cli.commands.graphdb.build_graph_from_extraction",
-        lambda extraction: extraction,
-    )
-
-    def fake_visualize(graph: dict, output_path: str, *, title: str | None = None):
-        del graph, title
-        out = Path(output_path)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(b"fake-png")
-        return out.resolve()
-
-    monkeypatch.setattr("cli.commands.graphdb.visualize_graph", fake_visualize)
-
-    out_path = tmp_path / "output" / "graph.json"
     result = runner.invoke(
         get_command(cli_app),
-        ["graphdb", "pull", "DemoSet", "--output", str(out_path)],
+        ["graphdb", "pull", "DemoSet"],
     )
 
-    assert result.exit_code == 0, result.stdout
-    expected = out_path
-    assert expected.exists()
-    assert (out_path.parent / "graph.png").exists()
-
-    payload = json.loads(expected.read_text(encoding="utf-8"))
-    assert payload["metadata"]["dataset"] == "DemoSet"
-    assert "JSON:" in result.stdout
-    assert "PNG:" in result.stdout
+    assert result.exit_code == 1, result.stdout
+    assert "disabled in GCP-only mode" in (result.output or "")
 
 
 def test_graphdb_from_gcs_runs_end_to_end(monkeypatch, tmp_path: Path) -> None:
-    out_path = tmp_path / "output" / "graph.json"
+    del tmp_path
 
     def fake_workflow(**kwargs):
         assert kwargs["dataset"] == "DemoSet"
-        assert kwargs["output"] == str(out_path)
         return {
             "dataset": "DemoSet",
             "gcs_input_uri": "gs://bucket/opengraph-ai/input/DemoSet",
             "gcs_json_uri": "gs://bucket/opengraph-ai/output/DemoSet/graph.json",
             "gcs_png_uri": "gs://bucket/opengraph-ai/output/DemoSet/graph.png",
-            "local_json_path": str(out_path),
-            "local_png_path": str(out_path.parent / "graph.png"),
             "stored_node_count": 1,
             "stored_edge_count": 0,
             "entity_count": 1,
@@ -146,17 +101,11 @@ def test_graphdb_from_gcs_runs_end_to_end(monkeypatch, tmp_path: Path) -> None:
             },
         }
 
-    monkeypatch.setattr("cli.commands.graphdb.run_graph_from_gcs_workflow", fake_workflow)
+    monkeypatch.setattr("cli.commands.graphdb.run_graph_from_gcs_via_cloud_run", fake_workflow)
 
     result = runner.invoke(
         get_command(cli_app),
-        [
-            "graphdb",
-            "from-gcs",
-            "DemoSet",
-            "--output",
-            str(out_path),
-        ],
+        ["graphdb", "from-gcs", "DemoSet"],
     )
 
     assert result.exit_code == 0, result.stdout
