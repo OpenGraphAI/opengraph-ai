@@ -149,6 +149,12 @@ Core flow:
 - Build graph JSON
 - Query for retrieval and reasoning
 
+## Use Case
+
+The knowledge graph implementation offered through this project has important implications in robotics.
+Robots can create live knowledge graph about their surrounding environment and navigate their surrounding environments
+accordingly.
+
 ## Roadmap
 
 - Add extraction support for images
