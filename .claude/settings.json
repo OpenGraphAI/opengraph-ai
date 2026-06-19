@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(python -m pytest tests/test_graph.py -v)",
+      "Bash(pip install *)"
     ]
   }
 }
