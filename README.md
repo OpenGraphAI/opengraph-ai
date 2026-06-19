@@ -137,6 +137,34 @@ print(get_node(graph, "entity-1"))
 
 ## Architecture Overview
 
+## Use Cases
+
+### Robotics
+
+- Autonomous robots can use knowledge graphs to understand relationships between objects, locations, and tasks in their environment.
+- Robots can perform task planning by reasoning about object dependencies, required tools, and action sequences.
+- Multi-robot systems can share a common knowledge graph to coordinate activities and exchange contextual information.
+- Warehouse and manufacturing robots can use graph-based representations to track inventory, equipment, and workflow dependencies.
+
+### Image Search
+
+- Images can be converted into graph structures that connect detected objects, scenes, and attributes
+- Users can search for images based on relationships, such as "person riding a bicycle near a building" rather than simple keyword matching
+- Knowledge graphs improve image retrieval by linking visual concepts with semantic meaning.
+
+### Video Search
+
+- Video content can be represented as graphs connecting people, objects, actions, locations, and events across frames
+- Users can search for specific events, such as a person entering a room and picking up a package
+- Graph-based video search enables more accurate retrieval of complex activities and temporal relationships
+- AI agents can reason over video-derived knowledge graphs to identify patterns, anomalies, and event sequences
+
+### Multimodal AI Agents
+
+- AI agents can combine information from text, images, audio, and video into a unified knowledge graph
+- Structured graph representations improve retrieval, reasoning, and explainability for complex AI workflows
+- Knowledge graphs provide traceable relationships between entities, helping agents make more informed decisions
+
 ```text
 CLI (Python) --------------> Shared Engine (Python)
 API (FastAPI) -------------> Shared Engine (Python)
