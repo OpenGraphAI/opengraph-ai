@@ -8,8 +8,12 @@ from collections import defaultdict
 from pathlib import Path
 
 import networkx as nx
+from dotenv import load_dotenv
 
 from opengraph_image.schema import ImageExtraction
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(_PROJECT_ROOT / ".env", override=True)
 
 _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 

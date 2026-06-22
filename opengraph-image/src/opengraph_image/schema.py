@@ -276,3 +276,25 @@ def validate_extraction(extraction: ImageExtraction) -> list[str]:
         _check_edge("RelatedToEdge", edge.source, edge.target)
 
     return errors
+
+
+# ---------------------------------------------------------------------------
+# Query models
+# ---------------------------------------------------------------------------
+
+class QueryResult(BaseModel):
+    """Result of answering a natural-language question over an ImageGraph."""
+
+    matched_node_ids: list[str] = Field(
+        default_factory=list,
+        description="IDs of graph nodes the model identified as relevant to the question.",
+    )
+    matched_subgraph: dict = Field(
+        default_factory=dict,
+        description="JSON-serializable subgraph ({'nodes': [...], 'edges': [...]}) induced by matched_node_ids.",
+    )
+    summary: str = Field(description="Natural-language answer citing image filenames and entity labels.")
+    primitives_used: list[dict] = Field(
+        default_factory=list,
+        description="Log of tool calls the model issued, e.g. [{'name': ..., 'input': ..., 'result': ...}].",
+    )
