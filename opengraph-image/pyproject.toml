@@ -13,6 +13,7 @@ dependencies = [
     "networkx>=3.6.1",
     "pillow>=12.2.0",
     "pydantic>=2.13.4",
+    "python-dotenv>=1.0.0",
     "tqdm>=4.68.3",
     "typer>=0.26.7",
 ]

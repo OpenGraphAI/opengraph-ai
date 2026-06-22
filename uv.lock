@@ -1167,6 +1167,7 @@ dependencies = [
     { name = "networkx" },
     { name = "pillow" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "tqdm" },
     { name = "typer" },
 ]
@@ -1184,6 +1185,7 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "pillow", specifier = ">=12.2.0" },
     { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "tqdm", specifier = ">=4.68.3" },
     { name = "typer", specifier = ">=0.26.7" },
 ]

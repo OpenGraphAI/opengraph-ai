@@ -8,9 +8,13 @@ import sys
 from pathlib import Path
 
 import anthropic
+from dotenv import load_dotenv
 from PIL import Image
 
 from opengraph_image.schema import ImageExtraction, validate_extraction
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(_PROJECT_ROOT / ".env", override=True)
 
 _MAX_LONG_EDGE = 1568
 
