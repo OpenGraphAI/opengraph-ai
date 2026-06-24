@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(python -m pytest tests/test_graph.py -v)",
+      "Bash(pip install *)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -c \"from opengraph_image.cli import app; print\\('ok'\\)\")",
+      "Bash(echo \"exit code: $?\")",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
