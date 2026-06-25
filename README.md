@@ -142,6 +142,9 @@ print(get_node(graph, "entity-1"))
 ### Robotics
 
 - Autonomous robots can use knowledge graphs to understand relationships between objects, locations, and tasks in their environment.
+- Support task planning for humans through coding and organization. 
+- Improves decision making through systems and binary code.
+- Improves efficiency of tasks. 
 - Robots can perform task planning by reasoning about object dependencies, required tools, and action sequences.
 - Multi-robot systems can share a common knowledge graph to coordinate activities and exchange contextual information.
 - Warehouse and manufacturing robots can use graph-based representations to track inventory, equipment, and workflow dependencies.
