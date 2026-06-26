@@ -1,143 +1,128 @@
-# OpenGraph AI
-
 <div align="center">
 
-[![Pull Requests](https://img.shields.io/badge/pull%20requests-welcome-5A2AB8?labelColor=3834B6)](https://github.com/your-org/opengraph-ai/pulls)
-[![License](https://img.shields.io/badge/license-MIT-5A2AB8?labelColor=3834B6)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-5A2AB8?labelColor=3834B6)](pyproject.toml)
-[![Node](https://img.shields.io/badge/node-20%2B-5A2AB8?labelColor=3834B6)](mcp-server/package.json)
-[![FastAPI](https://img.shields.io/badge/api-FastAPI-5A2AB8?labelColor=3834B6)](api/main.py)
+
+#  OpenGraph AI
+
+### Turning turns heterogeneous data into a queryable knowledge graph
+
+
+**`opengraph-AI`** turns heterogeneous data including table, text, image, audio and video into queryable knowledge/context graphs to support complex reasoning and retrieval for AI agents, and let users build effective and trusted AI agents.
+
+The v1 version **`opengraph-image`** builds an MCP server and CLI that extract entities and relationships from images, build a local knowledge graph, and let you ask natural-language questions over your visual data — no captions, no text documents, no manual labeling required.
+
+
+<p>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-2EA44F?style=for-the-badge&logo=apache&logoColor=white" alt="Apache 2.0 License"></a>
+  <a href="opengraph-image/pyproject.toml"><img src="https://img.shields.io/badge/python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+"></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-compatible-6E56CF?style=for-the-badge&logo=anthropic&logoColor=white" alt="MCP Compatible"></a>
+</p>
+<p>
+  <a href="https://github.com/PLACEHOLDER_ORG/PLACEHOLDER_REPO/pulls?q=is%3Apr+is%3Aclosed"><img src="https://img.shields.io/github/issues-pr-closed/PLACEHOLDER_ORG/PLACEHOLDER_REPO?style=for-the-badge&color=blueviolet&label=PRs%20closed" alt="Closed Pull Requests"></a>
+  <a href="https://github.com/PLACEHOLDER_ORG/PLACEHOLDER_REPO/stargazers"><img src="https://img.shields.io/github/stars/PLACEHOLDER_ORG/PLACEHOLDER_REPO?style=for-the-badge&color=yellow&label=stars" alt="GitHub Stars"></a>
+  <a href="https://github.com/PLACEHOLDER_ORG/PLACEHOLDER_REPO/issues"><img src="https://img.shields.io/github/issues/PLACEHOLDER_ORG/PLACEHOLDER_REPO?style=for-the-badge&color=orange" alt="Open Issues"></a>
+</p>
+<p>
+  <a href="https://discord.gg/PLACEHOLDER_INVITE"><img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Community"></a>
+  <a href="https://huggingface.co/PLACEHOLDER_ORG"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-PLACEHOLDER_ORG-FFD21E?style=for-the-badge" alt="Hugging Face"></a>
+</p>
 
 </div>
 
-OpenGraph AI is a developer toolchain for building agent-first systems over heterogeneous data. such as text, audio, image.
+---
 
-It turns data such as tables, text, images, audio, and video into semantic knowledge graphs for retrieval and reasoning, enabling structured understanding that AI agents can actually use.
+## ✨ What is this?
 
-## Why It Exists
+Most "image search" stops at keywords and captions. `opengraph-image` goes further: it looks at *every image in a folder*, identifies the objects, scenes, and attributes in each one, and links them together into a **knowledge graph** — the same kind of structured representation that powers serious reasoning systems.
 
-AI agents struggle with multi-source, unstructured data. Data is often fragmented across files, formats, and modalities, which makes reasoning brittle and context incomplete.
+Once built, that graph is exposed through **two simple MCP tools** so any MCP-compatible agent (Claude Code, Claude Desktop, Cursor, etc.) can reason over your images conversationally:
 
-OpenGraph AI adds a graph layer between raw data and agent workflows so entities, relationships, and evidence become explicit and queryable.
+- 🧠 `ingest_images` — point it at a folder, get back a graph
+- 🔍 `query_graph` — ask it anything, get back an answer grounded in the graph
 
-## Features (Initial Version)
+No vector database. No manual tagging. No text documents required — just images in, structured understanding out.
 
-- Extract graph structures from text
-- Extract graph structures from tables
-- Convert entities and relationships into graph JSON
-- Query the graph
-- Run graph workflows from CLI commands
-- Access graph workflows through API endpoints
-- Expose graph tooling to agent runtimes via MCP tools
+---
 
-## Project Components
+## 🚀 Quickstart: run it from your terminal
 
-- Python CLI (Typer-oriented command layer)
-- Python API service (FastAPI)
-- Node.js MCP server (Claude Code and Cursor integration)
-- Shared Python engine for extraction, graph build, and query operations
-
-## Installation
-
-### 1. Install CLI via pip
+Try the whole pipeline locally before wiring it into an agent.
 
 ```bash
+# 1. Move into the package and install it
+cd opengraph-image
 pip install -e .
-python -m cli --version
+
+# 2. Set your Anthropic API key (used for vision extraction + querying)
+cp .env.example .env
+echo 'ANTHROPIC_API_KEY=your_anthropic_api_key_here' >> .env
+
+# 3. Build a knowledge graph from a folder of images
+opengraph-image build ./tests/sample_images/test_photos
+# -> writes ./tests/sample_images/test_photos/opengraph-out/graph.json
+
+# 4. Inspect what got extracted
+opengraph-image summary ./tests/sample_images/test_photos
+
+# 5. Ask a natural-language question over the graph
+opengraph-image query "What's happening in the park photos?" \
+  --graph ./tests/sample_images/test_photos/opengraph-out/graph.json
 ```
 
-### Local API key configuration
+That's it — four commands and you've gone from raw JPEGs to a graph you can interrogate in plain English.
 
-Copy the template and fill in your own key locally:
+---
+
+## 🔌 Using `opengraph-image` as an MCP server
+
+This is where it gets fun: instead of running the CLI yourself, let your AI coding agent drive the graph for you.
+
+**Step 1 — Install the package** (same as above):
 
 ```bash
-cp .env.example .env.local
-```
-
-Then edit `.env.local` and set:
-
-```dotenv
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4o-mini
-```
-
-> The CLI and engine automatically load `.env.local` / `.env`, so you do not need to manually `export` the key in every new terminal session.
-
-### 2. Run API server
-
-```bash
+cd opengraph-image
 pip install -e .
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Cloud Run service-style graph request
-
-Once the API is deployed, you can call the dataset workflow by dataset name:
+**Step 2 — Register the MCP server with Claude Code:**
 
 ```bash
-curl -X POST http://localhost:8000/graph/from-gcs \
-    -H "Content-Type: application/json" \
-    -d '{
-        "dataset": "Airline+Loyalty+Program",
-        "model": "gpt-4o-mini"
-    }'
+claude mcp add opengraph-image -- opengraph-image-mcp
 ```
 
-This runs:
-- GCS dataset read
-- LLM extraction
-- Neo4j storage/export
-- JSON + PNG upload back to GCS
-- JSON response returned by the API
-
-### 3. Use MCP server with Claude Code or Cursor
+**Step 3 — Confirm it's connected:**
 
 ```bash
-cd mcp-server
-npm install
-npm run dev
+claude mcp list
+# opengraph-image should show up as ✓ connected
 ```
 
-Then register the MCP server command in your Claude Code or Cursor MCP configuration.
+**Step 4 — Just ask, in plain English, inside your Claude Code session:**
 
-## Quickstart Examples
+> 🗣️ "Build a knowledge graph from the images in `./photos` and tell me which ones contain people."
 
-### Text Extraction
+> 🗣️ "Query the graph — which images show a dog near a body of water?"
 
-```python
-from engine.extractors.text_extractor import extract_text
+> 🗣️ "List every image you've ingested and summarize the graph."
 
-chunks = extract_text("Alice founded Acme Corp in 2020.\nAcme acquired Beta Labs.")
-print(chunks)
-```
+Claude will call `build_graph`, `query_graph`, `get_image_entities`, `list_images`, and `graph_summary` on your behalf — you never have to touch JSON or write a query language. 🎉
 
-### Table Extraction
+> 💡 **Tip:** `opengraph-image` resolves graphs by folder, so as long as you tell the agent which folder your images live in, it'll find (or build) the right `opengraph-out/graph.json` automatically.
 
-```python
-from engine.extractors.table_extractor import extract_table
+---
 
-rows = extract_table("examples/table_example.csv")
-print(rows[:2])
-```
+## 🧰 Available MCP Tools
 
-### Graph Query
+| Tool | What it does |
+|---|---|
+| `build_graph(folder_path)` | Ingests every image in a folder and builds the knowledge graph |
+| `query_graph(question, graph_path)` | Answers a natural-language question grounded in the graph |
+| `get_image_entities(image_filename, graph_path)` | Returns all entities/edges connected to one image |
+| `list_images(graph_path)` | Lists every image currently represented in the graph |
+| `graph_summary(graph_path)` | Returns high-level stats about the graph |
 
-```python
-from engine.graphs.builder import build_graph
-from engine.graphs.query import get_node
+---
 
-records = [
-    {"id": "entity-1", "label": "Alice", "type": "person"},
-    {"id": "entity-2", "label": "Acme", "type": "company"},
-]
-
-graph = build_graph(records)
-print(get_node(graph, "entity-1"))
-```
-
-## Architecture Overview
-
-## Use Cases
+## 💡 Use Cases
 
 ### Robotics
 
@@ -168,43 +153,22 @@ print(get_node(graph, "entity-1"))
 - Structured graph representations improve retrieval, reasoning, and explainability for complex AI workflows
 - Knowledge graphs provide traceable relationships between entities, helping agents make more informed decisions
 
-```text
-CLI (Python) --------------> Shared Engine (Python)
-API (FastAPI) -------------> Shared Engine (Python)
-MCP (Node.js) -> Python wrapper -> Shared Engine (Python)
-```
+---
 
-Core flow:
-- Extract modality-specific data
-- Normalize entities and relationships
-- Build graph JSON
-- Query for retrieval and reasoning
+## 🤝 Contributing
 
-## Use Case
+`opengraph-image` is early, opinionated, and built in the open — which means your ideas can shape where it goes next. We'd love to have you.
 
-The knowledge graph implementation offered through this project has important implications in robotics.
-Robots can create live knowledge graph about their surrounding environment and navigate their surrounding environments
-accordingly.
+- 🐛 **Found a bug or have a feature idea?** [Open an issue](https://github.com/PLACEHOLDER_ORG/PLACEHOLDER_REPO/issues/new) — reproducible steps and context help us move fast.
+- 🔧 **Want to fix something yourself?** Fork the repo, make your change under `opengraph-image/`, add a test, and [open a pull request](https://github.com/PLACEHOLDER_ORG/PLACEHOLDER_REPO/pulls). We review fast and merge often.
+- 💬 **Want to talk it through first?** Hop into our [Discord](https://discord.gg/PLACEHOLDER_INVITE) — describe what you're thinking and we'll help you find the right entry point.
+- ✉️ **Prefer email?** Reach out directly at [PLACEHOLDER_CONTACT_EMAIL](mailto:PLACEHOLDER_CONTACT_EMAIL) — we read everything and reply to humans, not just issues.
+- 🙋 **Want to reach a maintainer 1:1?** Don't be shy — tag us in an issue or DM us on Discord. We're genuinely excited to hear what you're building on top of this.
 
-## Roadmap
+No contribution is too small — typo fixes, new test images, extraction edge cases, and wild "what if it could also do X" ideas are all welcome. 🌱
 
-- Add extraction support for images
-- Add extraction support for audio
-- Add extraction support for video
-- Add vector database connectors
-- Add higher-level agent workflow orchestration
+---
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
-
-## Contributing
-
-Contributions are welcome.
-
-- Open an issue with problem statement and reproducible context
-- Propose design updates via pull request
-- Include tests for new extraction, graph, or query behavior
-- Keep public APIs typed and documented
-
-Initial contribution guidance is available at [archive/CONTRIBUTING.md](archive/CONTRIBUTING.md).
+Licensed under the [Apache License 2.0](LICENSE).
