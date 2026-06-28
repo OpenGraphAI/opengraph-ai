@@ -1,0 +1,1465 @@
+{
+  "graph": {
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+      {
+        "type": "dataset",
+        "filename": "cal.tsv",
+        "rows": 479234,
+        "columns": 8,
+        "description": "Calculation arcs between parent/child taxonomy tags",
+        "id": "file_cal"
+      },
+      {
+        "type": "dataset",
+        "filename": "dim.tsv",
+        "rows": 400488,
+        "columns": 3,
+        "description": "Dimension hash to segment mapping",
+        "id": "file_dim"
+      },
+      {
+        "type": "dataset",
+        "filename": "num.tsv",
+        "rows": 4764194,
+        "columns": 16,
+        "description": "Numeric XBRL fact values",
+        "id": "file_num"
+      },
+      {
+        "type": "dataset",
+        "filename": "pre.tsv",
+        "rows": 3199297,
+        "columns": 10,
+        "description": "Presentation linkbase roles and labels",
+        "id": "file_pre"
+      },
+      {
+        "type": "dataset",
+        "filename": "ren.tsv",
+        "rows": 289780,
+        "columns": 10,
+        "description": "Report rendering structure",
+        "id": "file_ren"
+      },
+      {
+        "type": "dataset",
+        "filename": "sub.tsv",
+        "rows": 12402,
+        "columns": 40,
+        "description": "Submission metadata for SEC filings",
+        "id": "file_sub"
+      },
+      {
+        "type": "dataset",
+        "filename": "tag.tsv",
+        "rows": 489856,
+        "columns": 9,
+        "description": "XBRL taxonomy tag definitions",
+        "id": "file_tag"
+      },
+      {
+        "type": "dataset",
+        "filename": "txt.tsv",
+        "rows": 803375,
+        "columns": 20,
+        "description": "Text/non-numeric XBRL fact values",
+        "id": "file_txt"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000002488-26-000072",
+        "form": "8-K",
+        "period": "20260430",
+        "filed": "20260505",
+        "cik": 2488,
+        "id": "adsh_amd_8k"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000002488-26-000076",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": 2026,
+        "fp": "Q1",
+        "filed": "20260506",
+        "cik": 2488,
+        "id": "adsh_amd_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003499-26-000020",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": 2026,
+        "fp": "Q1",
+        "filed": "20260504",
+        "cik": 3499,
+        "id": "adsh_alx_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003570-26-000014",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": 2026,
+        "fp": "Q1",
+        "filed": "20260507",
+        "cik": 3570,
+        "id": "adsh_lng_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003570-26-000016",
+        "form": "8-K",
+        "period": "20260430",
+        "filed": "20260507",
+        "cik": 3570,
+        "id": "adsh_lng_8k"
+      },
+      {
+        "type": "entity",
+        "cik": "2488",
+        "name": "ADVANCED MICRO DEVICES INC",
+        "sic": "3674",
+        "city": "SANTA CLARA",
+        "state": "CA",
+        "country": "US",
+        "inc_country": "US",
+        "inc_state": "DE",
+        "ein": "941692300",
+        "inc": "DE",
+        "id": "entity_amd"
+      },
+      {
+        "type": "entity",
+        "cik": 3499,
+        "name": "ALEXANDERS INC",
+        "sic": 6798,
+        "city": "PARAMUS",
+        "state": "NJ",
+        "country": "US",
+        "inc_country": "US",
+        "inc_state": "DE",
+        "ein": "510100517",
+        "id": "entity_alx"
+      },
+      {
+        "type": "entity",
+        "cik": 3570,
+        "name": "CHENIERE ENERGY INC",
+        "sic": 4924,
+        "city": "HOUSTON",
+        "state": "TX",
+        "country": "US",
+        "inc_country": "US",
+        "inc_state": "DE",
+        "ein": "954352386",
+        "id": "entity_lng"
+      },
+      {
+        "type": "taxonomy",
+        "name": "us-gaap/2025",
+        "id": "taxonomy_usgaap_2025"
+      },
+      {
+        "type": "taxonomy",
+        "name": "us-gaap/2026",
+        "id": "taxonomy_usgaap_2026"
+      },
+      {
+        "type": "taxonomy",
+        "name": "dei/2026",
+        "id": "taxonomy_dei_2026"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "LiabilitiesAndStockholdersEquity",
+        "crdr": "credit",
+        "id": "tag_LiabilitiesAndStockholdersEquity"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "StockholdersEquity",
+        "crdr": "credit",
+        "id": "tag_StockholdersEquity"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "OperatingExpenses",
+        "crdr": "debit",
+        "id": "tag_OperatingExpenses"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "GeneralAndAdministrativeExpense",
+        "crdr": "debit",
+        "id": "tag_GeneralAndAdministrativeExpense"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "NetIncomeLoss",
+        "crdr": "credit",
+        "id": "tag_NetIncomeLoss"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "Revenues",
+        "crdr": "credit",
+        "id": "tag_Revenues"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "ComprehensiveIncomeNetOfTax",
+        "crdr": "credit",
+        "id": "tag_ComprehensiveIncomeNetOfTax"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "NetCashProvidedByUsedInOperatingActivities",
+        "crdr": "debit",
+        "id": "tag_NetCashProvidedByUsedInOperatingActivities"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "AccountsPayableCurrent",
+        "crdr": "credit",
+        "id": "tag_AccountsPayableCurrent"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "AccountsReceivableNetCurrent",
+        "crdr": "debit",
+        "id": "tag_AccountsReceivableNetCurrent"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "AccruedIncomeTaxesNoncurrent",
+        "crdr": "credit",
+        "id": "tag_AccruedIncomeTaxesNoncurrent"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "DocumentPeriodEndDate",
+        "namespace": "dei",
+        "id": "tag_DocumentPeriodEndDate"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "DocumentType",
+        "namespace": "dei",
+        "id": "tag_DocumentType"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "EntityRegistrantName",
+        "namespace": "dei",
+        "id": "tag_EntityRegistrantName"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "AmendmentFlag",
+        "namespace": "dei",
+        "id": "tag_AmendmentFlag"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00000000",
+        "segt": 0,
+        "description": "No segments",
+        "id": "dimhash_null"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00001edc0fd7f190315b2b6d0747d52a",
+        "segt": 0,
+        "description": "Credit loss / real estate portfolio segment",
+        "id": "dimhash_creditloss"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x000092b7bca0e72e96435be1684c41aa",
+        "segt": 0,
+        "description": "InvestmentIdentifier=Tango Bidco SAS 1st Lien",
+        "id": "dimhash_tango"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x0000945823502b895f90256fe0a782c7",
+        "segt": 0,
+        "description": "InvestmentIdentifier=Skopima Consilio Parent LLC",
+        "id": "dimhash_skopima"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00009b7c43b2a12fa3006298d5650554",
+        "segt": 0,
+        "description": "BusinessSegments=ReportableSegment;ProductOrService=ZW251",
+        "id": "dimhash_biz"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "A.A.V.SalesforceInc.Member",
+        "custom": true,
+        "abstract": true,
+        "datatype": "member",
+        "tlabel": "A.A. v. Salesforce, Inc. [Member]",
+        "id": "custom_tag_salesforce_aav"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "A0.000PercentLoanDue2039Member",
+        "custom": true,
+        "abstract": true,
+        "datatype": "member",
+        "tlabel": "0.000 Percent Loan Due 2039 [Member]",
+        "id": "custom_tag_loan2039"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "A0.00ConvertibleSeniorNotesDue2029Member",
+        "custom": true,
+        "abstract": true,
+        "datatype": "member",
+        "tlabel": "0.00% Convertible Senior Notes Due 2029 [Member]",
+        "id": "custom_tag_notes2029"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Cover Page",
+        "menucat": "C",
+        "roleuri": "http://www.amd.com/role/CoverPage",
+        "id": "report_amd_coverpage"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Statements of Operations",
+        "menucat": "S",
+        "id": "report_amd_incomestatement"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Statements of Comprehensive Income",
+        "menucat": "S",
+        "id": "report_amd_comprehensiveincome"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Balance Sheets",
+        "menucat": "S",
+        "id": "report_amd_balancesheet"
+      },
+      {
+        "type": "numeric_fact",
+        "tag": "AccountsPayableCurrent",
+        "value": 2929000000,
+        "uom": "USD",
+        "ddate": "20251231",
+        "id": "fact_amd_ap_20251231"
+      },
+      {
+        "type": "numeric_fact",
+        "tag": "AccountsPayableCurrent",
+        "value": 2997000000,
+        "uom": "USD",
+        "ddate": "20260331",
+        "id": "fact_amd_ap_20260331"
+      },
+      {
+        "type": "numeric_fact",
+        "tag": "AccountsReceivableNetCurrent",
+        "value": 6315000000,
+        "uom": "USD",
+        "ddate": "20251231",
+        "id": "fact_amd_ar_20251231"
+      },
+      {
+        "type": "numeric_fact",
+        "tag": "AccountsReceivableNetCurrent",
+        "value": 6035000000,
+        "uom": "USD",
+        "ddate": "20260331",
+        "id": "fact_amd_ar_20260331"
+      },
+      {
+        "type": "fact",
+        "tag": "AccruedIncomeTaxesNoncurrent",
+        "value": 806000000,
+        "uom": "USD",
+        "ddate": "20251231",
+        "id": "fact_amd_taxnc_20251231"
+      },
+      {
+        "type": "text_fact",
+        "tag": "DocumentType",
+        "value": "8-K",
+        "ddate": "20260430",
+        "id": "txt_amd_8k_doctype"
+      },
+      {
+        "type": "text_fact",
+        "tag": "DocumentPeriodEndDate",
+        "value": "2026-05-05",
+        "ddate": "20260430",
+        "id": "txt_amd_8k_period"
+      },
+      {
+        "type": "text_fact",
+        "tag": "AmendmentFlag",
+        "value": "false",
+        "ddate": "20260430",
+        "id": "txt_amd_8k_amendment"
+      },
+      {
+        "type": "key_field",
+        "description": "Accession number (primary filing identifier)",
+        "id": "adsh"
+      },
+      {
+        "type": "key_field",
+        "description": "Dimension hash linking facts to segment combinations",
+        "id": "dimhash"
+      },
+      {
+        "type": "key_field",
+        "description": "Tag + taxonomy version composite key",
+        "id": "tag_version"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000002488-26-000072",
+        "form": "8-K",
+        "period": "20260430",
+        "filed": "20260505",
+        "id": "filing_amd_8k"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000002488-26-000076",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": "2026",
+        "fp": "Q1",
+        "filed": "20260506",
+        "id": "filing_amd_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003499-26-000020",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": "2026",
+        "fp": "Q1",
+        "filed": "20260504",
+        "id": "filing_alexanders_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003570-26-000014",
+        "form": "10-Q",
+        "period": "20260331",
+        "fy": "2026",
+        "fp": "Q1",
+        "filed": "20260507",
+        "id": "filing_cheniere_10q"
+      },
+      {
+        "type": "filing",
+        "adsh": "0000003570-26-000016",
+        "form": "8-K",
+        "period": "20260430",
+        "filed": "20260507",
+        "id": "filing_cheniere_8k"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00000000",
+        "segments": "",
+        "segt": 0,
+        "id": "dim_null"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00001edc...",
+        "segments": "CreditLossStatus;FinancingReceivablePortfolioSegment;OneToFourFamilyResidentialMortgage;30-89DaysPastDue;Pass",
+        "segt": 0,
+        "id": "dim_creditloss"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x000092b7...",
+        "segments": "InvestmentIdentifier=Tango Bidco SAS, 1st Lien Senior Secured Delayed Draw Loan 1",
+        "segt": 0,
+        "id": "dim_tango"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x0000945823...",
+        "segments": "InvestmentIdentifier=Skopima Consilio Parent LLC Senior Secured First Lien Term Loan",
+        "segt": 0,
+        "id": "dim_skopima"
+      },
+      {
+        "type": "dimension",
+        "dimhash": "0x00009b7c...",
+        "segments": "BusinessSegments=ReportableSegment;ProductOrService=ZW251",
+        "segt": 0,
+        "id": "dim_segment_zw251"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Statements of Operations",
+        "menucat": "S",
+        "id": "report_amd_income_stmt"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Statements of Comprehensive Income",
+        "menucat": "S",
+        "id": "report_amd_comp_income"
+      },
+      {
+        "type": "report_section",
+        "shortname": "Condensed Consolidated Balance Sheets",
+        "menucat": "S",
+        "id": "report_amd_balance_sheet"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "A0.000PercentLoanDue2039Member",
+        "custom": true,
+        "abstract": true,
+        "datatype": "member",
+        "id": "custom_tag_loan_2039"
+      },
+      {
+        "type": "xbrl_tag",
+        "tag": "A0.00ConvertibleSeniorNotesDue2029Member",
+        "custom": true,
+        "abstract": true,
+        "datatype": "member",
+        "id": "custom_tag_notes_2029"
+      },
+      {
+        "type": "numeric_fact",
+        "tag": "AccruedIncomeTaxesNoncurrent",
+        "value": 806000000,
+        "ddate": "20251231",
+        "uom": "USD",
+        "id": "fact_amd_tax_20251231"
+      },
+      {
+        "type": "text_fact",
+        "tag": "DocumentType",
+        "value": "8-K",
+        "ddate": "20260430",
+        "id": "txt_amd_doctype"
+      },
+      {
+        "type": "text_fact",
+        "tag": "AmendmentFlag",
+        "value": "false",
+        "ddate": "20260430",
+        "id": "txt_amd_amendment"
+      },
+      {
+        "type": "text_fact",
+        "tag": "EntityAddressAddressLine1",
+        "value": "2485 Augustine Drive",
+        "ddate": "20260430",
+        "id": "txt_amd_address"
+      }
+    ],
+    "edges": [
+      {
+        "relation": "provides_calc_for",
+        "source": "file_cal",
+        "target": "adsh_alx_10q"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_cal",
+        "target": "adsh"
+      },
+      {
+        "relation": "references",
+        "source": "file_cal",
+        "target": "tag_version"
+      },
+      {
+        "relation": "joins_via_tag_version",
+        "source": "file_cal",
+        "target": "file_tag"
+      },
+      {
+        "relation": "joins_via_adsh",
+        "source": "file_cal",
+        "target": "file_sub"
+      },
+      {
+        "relation": "dimension_lookup_for",
+        "source": "file_dim",
+        "target": "file_num"
+      },
+      {
+        "relation": "dimension_lookup_for",
+        "source": "file_dim",
+        "target": "file_txt"
+      },
+      {
+        "relation": "defines",
+        "source": "file_dim",
+        "target": "dimhash"
+      },
+      {
+        "relation": "provides_facts_for",
+        "source": "file_num",
+        "target": "adsh_amd_10q"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_num",
+        "target": "adsh"
+      },
+      {
+        "relation": "references",
+        "source": "file_num",
+        "target": "dimhash"
+      },
+      {
+        "relation": "references",
+        "source": "file_num",
+        "target": "tag_version"
+      },
+      {
+        "relation": "joins_via_dimhash",
+        "source": "file_num",
+        "target": "file_dim"
+      },
+      {
+        "relation": "joins_via_tag_version",
+        "source": "file_num",
+        "target": "file_tag"
+      },
+      {
+        "relation": "joins_via_adsh",
+        "source": "file_num",
+        "target": "file_sub"
+      },
+      {
+        "relation": "provides_presentation_for",
+        "source": "file_pre",
+        "target": "adsh_amd_10q"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_pre",
+        "target": "adsh"
+      },
+      {
+        "relation": "references",
+        "source": "file_pre",
+        "target": "tag_version"
+      },
+      {
+        "relation": "joins_via_tag_version",
+        "source": "file_pre",
+        "target": "file_tag"
+      },
+      {
+        "relation": "joins_via_adsh",
+        "source": "file_pre",
+        "target": "file_sub"
+      },
+      {
+        "relation": "joins_via_report",
+        "source": "file_pre",
+        "target": "file_ren"
+      },
+      {
+        "relation": "provides_reports_for",
+        "source": "file_ren",
+        "target": "adsh_amd_8k"
+      },
+      {
+        "relation": "provides_reports_for",
+        "source": "file_ren",
+        "target": "adsh_amd_10q"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_ren",
+        "target": "adsh"
+      },
+      {
+        "relation": "joins_via_adsh",
+        "source": "file_ren",
+        "target": "file_sub"
+      },
+      {
+        "relation": "contains_filing",
+        "source": "file_sub",
+        "target": "adsh_amd_8k"
+      },
+      {
+        "relation": "contains_filing",
+        "source": "file_sub",
+        "target": "adsh_amd_10q"
+      },
+      {
+        "relation": "contains_filing",
+        "source": "file_sub",
+        "target": "adsh_alx_10q"
+      },
+      {
+        "relation": "contains_filing",
+        "source": "file_sub",
+        "target": "adsh_lng_10q"
+      },
+      {
+        "relation": "contains_filing",
+        "source": "file_sub",
+        "target": "adsh_lng_8k"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_sub",
+        "target": "adsh"
+      },
+      {
+        "relation": "registers",
+        "source": "file_sub",
+        "target": "entity_amd"
+      },
+      {
+        "relation": "registers",
+        "source": "file_sub",
+        "target": "entity_alx"
+      },
+      {
+        "relation": "registers",
+        "source": "file_sub",
+        "target": "entity_lng"
+      },
+      {
+        "relation": "tag_definitions_for",
+        "source": "file_tag",
+        "target": "file_num"
+      },
+      {
+        "relation": "tag_definitions_for",
+        "source": "file_tag",
+        "target": "file_pre"
+      },
+      {
+        "relation": "tag_definitions_for",
+        "source": "file_tag",
+        "target": "file_cal"
+      },
+      {
+        "relation": "defines",
+        "source": "file_tag",
+        "target": "tag_version"
+      },
+      {
+        "relation": "provides_text_facts_for",
+        "source": "file_txt",
+        "target": "adsh_amd_8k"
+      },
+      {
+        "relation": "keyed_by",
+        "source": "file_txt",
+        "target": "adsh"
+      },
+      {
+        "relation": "references",
+        "source": "file_txt",
+        "target": "dimhash"
+      },
+      {
+        "relation": "joins_via_dimhash",
+        "source": "file_txt",
+        "target": "file_dim"
+      },
+      {
+        "relation": "joins_via_adsh",
+        "source": "file_txt",
+        "target": "file_sub"
+      },
+      {
+        "relation": "filed_by",
+        "source": "adsh_amd_8k",
+        "target": "entity_amd"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "adsh_amd_8k",
+        "target": "report_amd_coverpage"
+      },
+      {
+        "relation": "has_text_fact",
+        "source": "adsh_amd_8k",
+        "target": "txt_amd_8k_doctype"
+      },
+      {
+        "relation": "has_text_fact",
+        "source": "adsh_amd_8k",
+        "target": "txt_amd_8k_period"
+      },
+      {
+        "relation": "has_text_fact",
+        "source": "adsh_amd_8k",
+        "target": "txt_amd_8k_amendment"
+      },
+      {
+        "relation": "filed_by",
+        "source": "adsh_amd_10q",
+        "target": "entity_amd"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "adsh_amd_10q",
+        "target": "report_amd_coverpage"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "adsh_amd_10q",
+        "target": "report_amd_incomestatement"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "adsh_amd_10q",
+        "target": "report_amd_comprehensiveincome"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "adsh_amd_10q",
+        "target": "report_amd_balancesheet"
+      },
+      {
+        "relation": "has_fact",
+        "source": "adsh_amd_10q",
+        "target": "fact_amd_ap_20251231"
+      },
+      {
+        "relation": "has_fact",
+        "source": "adsh_amd_10q",
+        "target": "fact_amd_ap_20260331"
+      },
+      {
+        "relation": "has_fact",
+        "source": "adsh_amd_10q",
+        "target": "fact_amd_ar_20251231"
+      },
+      {
+        "relation": "has_fact",
+        "source": "adsh_amd_10q",
+        "target": "fact_amd_ar_20260331"
+      },
+      {
+        "relation": "has_fact",
+        "source": "adsh_amd_10q",
+        "target": "fact_amd_taxnc_20251231"
+      },
+      {
+        "relation": "filed_by",
+        "source": "adsh_alx_10q",
+        "target": "entity_alx"
+      },
+      {
+        "relation": "calc_parent",
+        "grp": 1,
+        "arc": 20,
+        "negative": 1,
+        "source": "adsh_alx_10q",
+        "target": "tag_LiabilitiesAndStockholdersEquity"
+      },
+      {
+        "relation": "calc_parent",
+        "grp": 3,
+        "arc": 5,
+        "negative": 1,
+        "source": "adsh_alx_10q",
+        "target": "tag_OperatingExpenses"
+      },
+      {
+        "relation": "calc_parent",
+        "grp": 3,
+        "arc": 1,
+        "negative": 1,
+        "source": "adsh_alx_10q",
+        "target": "tag_NetIncomeLoss"
+      },
+      {
+        "relation": "calc_parent",
+        "grp": 2,
+        "arc": 1,
+        "negative": 1,
+        "source": "adsh_alx_10q",
+        "target": "tag_ComprehensiveIncomeNetOfTax"
+      },
+      {
+        "relation": "calc_parent",
+        "grp": 4,
+        "arc": 4,
+        "negative": 1,
+        "source": "adsh_alx_10q",
+        "target": "tag_NetCashProvidedByUsedInOperatingActivities"
+      },
+      {
+        "relation": "filed_by",
+        "source": "adsh_lng_10q",
+        "target": "entity_lng"
+      },
+      {
+        "relation": "filed_by",
+        "source": "adsh_lng_8k",
+        "target": "entity_lng"
+      },
+      {
+        "relation": "filed",
+        "source": "entity_amd",
+        "target": "filing_amd_8k"
+      },
+      {
+        "relation": "filed",
+        "source": "entity_amd",
+        "target": "filing_amd_10q"
+      },
+      {
+        "relation": "filed",
+        "source": "entity_alx",
+        "target": "filing_alexanders_10q"
+      },
+      {
+        "relation": "filed",
+        "source": "entity_lng",
+        "target": "filing_cheniere_10q"
+      },
+      {
+        "relation": "filed",
+        "source": "entity_lng",
+        "target": "filing_cheniere_8k"
+      },
+      {
+        "relation": "calc_parent_of",
+        "negative": true,
+        "source": "tag_LiabilitiesAndStockholdersEquity",
+        "target": "tag_StockholdersEquity"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_LiabilitiesAndStockholdersEquity",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_StockholdersEquity",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "calc_parent_of",
+        "negative": true,
+        "source": "tag_OperatingExpenses",
+        "target": "tag_GeneralAndAdministrativeExpense"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_OperatingExpenses",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_GeneralAndAdministrativeExpense",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "calc_parent_of",
+        "negative": true,
+        "source": "tag_NetIncomeLoss",
+        "target": "tag_Revenues"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_NetIncomeLoss",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_Revenues",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "calc_parent_of",
+        "negative": true,
+        "source": "tag_ComprehensiveIncomeNetOfTax",
+        "target": "tag_NetIncomeLoss"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_ComprehensiveIncomeNetOfTax",
+        "target": "taxonomy_usgaap_2025"
+      },
+      {
+        "relation": "calc_parent_of",
+        "negative": true,
+        "source": "tag_NetCashProvidedByUsedInOperatingActivities",
+        "target": "tag_NetIncomeLoss"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_AccountsPayableCurrent",
+        "target": "taxonomy_usgaap_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_AccountsReceivableNetCurrent",
+        "target": "taxonomy_usgaap_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_AccruedIncomeTaxesNoncurrent",
+        "target": "taxonomy_usgaap_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_DocumentPeriodEndDate",
+        "target": "taxonomy_dei_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_DocumentType",
+        "target": "taxonomy_dei_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_EntityRegistrantName",
+        "target": "taxonomy_dei_2026"
+      },
+      {
+        "relation": "defined_in",
+        "source": "tag_AmendmentFlag",
+        "target": "taxonomy_dei_2026"
+      },
+      {
+        "relation": "instance_of",
+        "source": "fact_amd_ap_20251231",
+        "target": "tag_AccountsPayableCurrent"
+      },
+      {
+        "relation": "has_dimension",
+        "source": "fact_amd_ap_20251231",
+        "target": "dimhash_null"
+      },
+      {
+        "relation": "uses_dimension",
+        "source": "fact_amd_ap_20251231",
+        "target": "dim_null"
+      },
+      {
+        "relation": "instance_of",
+        "source": "fact_amd_ap_20260331",
+        "target": "tag_AccountsPayableCurrent"
+      },
+      {
+        "relation": "has_dimension",
+        "source": "fact_amd_ap_20260331",
+        "target": "dimhash_null"
+      },
+      {
+        "relation": "uses_dimension",
+        "source": "fact_amd_ap_20260331",
+        "target": "dim_null"
+      },
+      {
+        "relation": "instance_of",
+        "source": "fact_amd_ar_20251231",
+        "target": "tag_AccountsReceivableNetCurrent"
+      },
+      {
+        "relation": "has_dimension",
+        "source": "fact_amd_ar_20251231",
+        "target": "dimhash_null"
+      },
+      {
+        "relation": "uses_dimension",
+        "source": "fact_amd_ar_20251231",
+        "target": "dim_null"
+      },
+      {
+        "relation": "instance_of",
+        "source": "fact_amd_ar_20260331",
+        "target": "tag_AccountsReceivableNetCurrent"
+      },
+      {
+        "relation": "has_dimension",
+        "source": "fact_amd_ar_20260331",
+        "target": "dimhash_null"
+      },
+      {
+        "relation": "uses_dimension",
+        "source": "fact_amd_ar_20260331",
+        "target": "dim_null"
+      },
+      {
+        "relation": "measured_by",
+        "source": "fact_amd_taxnc_20251231",
+        "target": "tag_AccruedIncomeTaxesNoncurrent"
+      },
+      {
+        "relation": "measured_by",
+        "source": "txt_amd_8k_doctype",
+        "target": "tag_DocumentType"
+      },
+      {
+        "relation": "measured_by",
+        "source": "txt_amd_8k_period",
+        "target": "tag_DocumentPeriodEndDate"
+      },
+      {
+        "relation": "measured_by",
+        "source": "txt_amd_8k_amendment",
+        "target": "tag_AmendmentFlag"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_8k",
+        "target": "txt_amd_doctype"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_8k",
+        "target": "txt_amd_amendment"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_8k",
+        "target": "txt_amd_address"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_10q",
+        "target": "fact_amd_ap_20251231"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_10q",
+        "target": "fact_amd_ap_20260331"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_10q",
+        "target": "fact_amd_ar_20251231"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_10q",
+        "target": "fact_amd_ar_20260331"
+      },
+      {
+        "relation": "contains_fact",
+        "source": "filing_amd_10q",
+        "target": "fact_amd_tax_20251231"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "filing_amd_10q",
+        "target": "report_amd_coverpage"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "filing_amd_10q",
+        "target": "report_amd_income_stmt"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "filing_amd_10q",
+        "target": "report_amd_comp_income"
+      },
+      {
+        "relation": "has_report_section",
+        "source": "filing_amd_10q",
+        "target": "report_amd_balance_sheet"
+      },
+      {
+        "relation": "uses_calc_arc",
+        "grp": 1,
+        "arc": 20,
+        "negative": true,
+        "source": "filing_alexanders_10q",
+        "target": "tag_LiabilitiesAndStockholdersEquity"
+      },
+      {
+        "relation": "uses_calc_arc",
+        "grp": 3,
+        "arc": 5,
+        "negative": true,
+        "source": "filing_alexanders_10q",
+        "target": "tag_OperatingExpenses"
+      },
+      {
+        "relation": "uses_calc_arc",
+        "grp": 3,
+        "arc": 1,
+        "negative": true,
+        "source": "filing_alexanders_10q",
+        "target": "tag_NetIncomeLoss"
+      },
+      {
+        "relation": "uses_calc_arc",
+        "grp": 2,
+        "arc": 1,
+        "negative": true,
+        "source": "filing_alexanders_10q",
+        "target": "tag_ComprehensiveIncomeNetOfTax"
+      },
+      {
+        "relation": "uses_calc_arc",
+        "grp": 4,
+        "arc": 4,
+        "negative": true,
+        "source": "filing_alexanders_10q",
+        "target": "tag_NetCashProvidedByUsedInOperatingActivities"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_income_stmt",
+        "target": "tag_NetIncomeLoss"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_income_stmt",
+        "target": "tag_Revenues"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_income_stmt",
+        "target": "tag_OperatingExpenses"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_comp_income",
+        "target": "tag_ComprehensiveIncomeNetOfTax"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_balance_sheet",
+        "target": "tag_AccountsPayableCurrent"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_balance_sheet",
+        "target": "tag_AccountsReceivableNetCurrent"
+      },
+      {
+        "relation": "presents",
+        "source": "report_amd_balance_sheet",
+        "target": "tag_LiabilitiesAndStockholdersEquity"
+      },
+      {
+        "relation": "instance_of",
+        "source": "fact_amd_tax_20251231",
+        "target": "tag_AccruedIncomeTaxesNoncurrent"
+      },
+      {
+        "relation": "instance_of",
+        "source": "txt_amd_doctype",
+        "target": "tag_DocumentType"
+      },
+      {
+        "relation": "instance_of",
+        "source": "txt_amd_amendment",
+        "target": "tag_AmendmentFlag"
+      }
+    ]
+  },
+  "sources": {
+    "src_cal": {
+      "id": "src_cal",
+      "filename": "cal.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 0,
+      "title": "Calculation Arcs",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_dim": {
+      "id": "src_dim",
+      "filename": "dim.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 1,
+      "title": "Dimensions",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_num": {
+      "id": "src_num",
+      "filename": "num.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 2,
+      "title": "Numeric Facts",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_pre": {
+      "id": "src_pre",
+      "filename": "pre.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 3,
+      "title": "Presentation Linkbase",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_ren": {
+      "id": "src_ren",
+      "filename": "ren.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 4,
+      "title": "Report Rendering",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_sub": {
+      "id": "src_sub",
+      "filename": "sub.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 5,
+      "title": "Submissions",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_tag": {
+      "id": "src_tag",
+      "filename": "tag.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 6,
+      "title": "Tag Definitions",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    },
+    "src_txt": {
+      "id": "src_txt",
+      "filename": "txt.tsv",
+      "sheet_name": null,
+      "page_index": null,
+      "table_index": 7,
+      "title": "Text Facts",
+      "extracted_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  "metadata": {
+    "total_nodes": 76,
+    "total_edges": 133,
+    "node_count_by_type": {
+      "dataset": 8,
+      "filing": 10,
+      "entity": 3,
+      "taxonomy": 3,
+      "xbrl_tag": 20,
+      "dimension": 10,
+      "report_section": 7,
+      "numeric_fact": 5,
+      "fact": 1,
+      "text_fact": 6,
+      "key_field": 3
+    },
+    "relation_count": {
+      "provides_calc_for": 1,
+      "keyed_by": 6,
+      "references": 5,
+      "joins_via_tag_version": 3,
+      "joins_via_adsh": 5,
+      "dimension_lookup_for": 2,
+      "defines": 2,
+      "provides_facts_for": 1,
+      "joins_via_dimhash": 2,
+      "provides_presentation_for": 1,
+      "joins_via_report": 1,
+      "provides_reports_for": 2,
+      "contains_filing": 5,
+      "registers": 3,
+      "tag_definitions_for": 3,
+      "provides_text_facts_for": 1,
+      "filed_by": 5,
+      "has_report_section": 9,
+      "has_text_fact": 3,
+      "has_fact": 5,
+      "calc_parent": 5,
+      "filed": 5,
+      "calc_parent_of": 5,
+      "defined_in": 14,
+      "instance_of": 7,
+      "has_dimension": 4,
+      "uses_dimension": 4,
+      "measured_by": 4,
+      "contains_fact": 8,
+      "uses_calc_arc": 5,
+      "presents": 7
+    },
+    "top_nodes": [
+      {
+        "id": "file_sub",
+        "degree": 14
+      },
+      {
+        "id": "adsh_amd_10q",
+        "degree": 14
+      },
+      {
+        "id": "filing_amd_10q",
+        "degree": 10
+      },
+      {
+        "id": "file_num",
+        "degree": 9
+      },
+      {
+        "id": "adsh_amd_8k",
+        "degree": 8
+      },
+      {
+        "id": "adsh_alx_10q",
+        "degree": 8
+      },
+      {
+        "id": "file_pre",
+        "degree": 7
+      },
+      {
+        "id": "file_tag",
+        "degree": 7
+      },
+      {
+        "id": "taxonomy_usgaap_2025",
+        "degree": 7
+      },
+      {
+        "id": "tag_NetIncomeLoss",
+        "degree": 7
+      },
+      {
+        "id": "file_cal",
+        "degree": 6
+      },
+      {
+        "id": "file_txt",
+        "degree": 6
+      },
+      {
+        "id": "adsh",
+        "degree": 6
+      },
+      {
+        "id": "filing_alexanders_10q",
+        "degree": 6
+      },
+      {
+        "id": "file_dim",
+        "degree": 5
+      }
+    ],
+    "sources": 8
+  }
+}
