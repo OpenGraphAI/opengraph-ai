@@ -34,4 +34,5 @@ testpaths = ["tests"]
 [tool.uv.workspace]
 members = [
     "opengraph-image",
+    "opengraph-text",
 ]
