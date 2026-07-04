@@ -33,18 +33,11 @@
   </a>
 </p>
 
-<p align="left">
-<strong>OpenGraph AI</strong> turns tables, texts, images, audio, and videos into queryable knowledge/context graphs to support complex reasoning and retrieval for AI systems, enabling developers to build more effective and trustworthy AI agents.
-</p>
+</div>
 
-<p align="left">
-The first release, <strong><code>opengraph-image</code></strong>, provides an MCP server and CLI that extract <strong>nodes</strong>, <strong>edges</strong>, and <strong>relationships</strong> from images to automatically construct knowledge graphs.
-</p>
+**OpenGraph AI** turns tables, texts, images, audio, and videos into queryable knowledge/context graphs to support complex reasoning and retrieval for AI systems, enabling developers to build more effective and trustworthy AI agents.
 
-
-
-
-
+The first release, **`opengraph-image`**, provides an MCP server and CLI that extract **nodes**, **edges**, and **relationships** from images to automatically construct knowledge graphs.
 
 ---
 
