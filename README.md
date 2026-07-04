@@ -6,6 +6,7 @@
 </h1>
 
 
+
 ### *Turning heterogeneous data into queryable knowledge graphs*
 
 <p align="center">
@@ -13,13 +14,14 @@
     <img src="https://img.shields.io/badge/MCP-Compatible-6E56CF?style=flat&logo=anthropic&logoColor=white" alt="MCP Compatible"/>
   </a>
   <a href="https://github.com/OpenGraphAI/opengraph-ai/pulls?q=is%3Apr+is%3Aclosed">
-  <img src="https://img.shields.io/github/issues-pr-closed/OpenGraphAI/opengraph-ai?style=flat&logo=github&logoColor=white&label=Closed%20PRs&color=8B5CF6" alt="Closed Pull Requests"/>
-</a>
-<a href="https://github.com/OpenGraphAI/opengraph-ai/stargazers">
-  <img src="https://img.shields.io/github/stars/OpenGraphAI/opengraph-ai?style=flat&logo=github&logoColor=white&label=Stars&color=FBBF24" alt="GitHub Stars"/>
-</a>
+    <img src="https://img.shields.io/github/issues-pr-closed/OpenGraphAI/opengraph-ai?style=flat&logo=github&logoColor=white&label=Closed%20PRs&color=8B5CF6" alt="Closed Pull Requests"/>
+  </a>
+  <a href="https://github.com/OpenGraphAI/opengraph-ai/stargazers">
+    <img src="https://img.shields.io/github/stars/OpenGraphAI/opengraph-ai?style=flat&logo=github&logoColor=white&label=Stars&color=FBBF24" alt="GitHub Stars"/>
+  </a>
 </p>
 
+<p align="center">
   <a href="https://discord.gg/PGFqf5amy6">
     <img src="https://img.shields.io/badge/Discord-Community-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord Community"/>
   </a>
@@ -32,17 +34,17 @@
 </p>
 
 <p align="left">
-`OpenGraph AI` turns tables, texts, images, audio and videos into queryable knowledge/context graphs to support complex reasoning and retrieval for AI systems, and lets users build effective and trusted AI agents.
+<strong>OpenGraph AI</strong> turns tables, texts, images, audio, and videos into queryable knowledge/context graphs to support complex reasoning and retrieval for AI systems, enabling developers to build more effective and trustworthy AI agents.
 </p>
-
 
 <p align="left">
-The first version of **`opengraph-image`** builds an MCP server and CLI that extract entities including **node**, **edge** and **relationships** from images.
+The first release, <strong><code>opengraph-image</code></strong>, provides an MCP server and CLI that extract <strong>nodes</strong>, <strong>edges</strong>, and <strong>relationships</strong> from images to automatically construct knowledge graphs.
 </p>
 
 
 
-</div>
+
+
 
 ---
 
