@@ -9,6 +9,214 @@ from typing import Any
 import anthropic
 import networkx as nx
 
+_MODEL = "claude-sonnet-4-6"
+_MAX_TURNS = 8
+
+_NODE_TYPES = [
+    "dataset",
+    "filing",
+    "entity",
+    "taxonomy",
+    "xbrl_tag",
+    "dimension",
+    "report_section",
+    "fact",
+    "text_fact",
+]
+
+
+def _display_label(node_id: str, attrs: dict[str, Any]) -> str:
+    return (
+        attrs.get("name")
+        or attrs.get("tag")
+        or attrs.get("shortname")
+        or attrs.get("filename")
+        or attrs.get("adsh")
+        or node_id
+    )
+
+
+def _node_dict(node_id: str, attrs: dict[str, Any]) -> dict[str, Any]:
+    return {"id": node_id, **attrs}
+
+
+def _find_nodes_by_label(g: nx.DiGraph, pattern: str, node_type: str | None = None) -> list[dict[str, Any]]:
+    p = pattern.lower()
+    out: list[dict[str, Any]] = []
+    for node_id, attrs in g.nodes(data=True):
+        if node_type and attrs.get("type") != node_type:
+            continue
+        label = _display_label(node_id, attrs)
+        if p in label.lower() or p in node_id.lower():
+            out.append(_node_dict(node_id, attrs))
+    return out
+
+
+def _find_nodes_by_type(g: nx.DiGraph, node_type: str) -> list[dict[str, Any]]:
+    return [
+        _node_dict(node_id, attrs)
+        for node_id, attrs in g.nodes(data=True)
+        if attrs.get("type") == node_type
+    ]
+
+
+def _get_neighbors(g: nx.DiGraph, node_id: str, depth: int = 1) -> dict[str, Any]:
+    if node_id not in g.nodes:
+        matches = _find_nodes_by_label(g, node_id)
+        if not matches:
+            raise ValueError(f"No node found matching '{node_id}'.")
+        node_id = matches[0]["id"]
+
+    ego = nx.ego_graph(g, node_id, radius=depth, undirected=True)
+    nodes = [_node_dict(n, ego.nodes[n]) for n in ego.nodes]
+    edges = [{"source": u, "target": v, **data} for u, v, data in ego.edges(data=True)]
+    return {"nodes": nodes, "edges": edges}
+
+
+def _find_path(g: nx.DiGraph, node_a: str, node_b: str, max_hops: int = 4) -> list[list[str]]:
+    def resolve(ref: str) -> str:
+        if ref in g.nodes:
+            return ref
+        m = _find_nodes_by_label(g, ref)
+        if m:
+            return m[0]["id"]
+        raise ValueError(f"No node found matching '{ref}'.")
+
+    a = resolve(node_a)
+    b = resolve(node_b)
+    paths = nx.all_simple_paths(g.to_undirected(as_view=True), source=a, target=b, cutoff=max_hops)
+    return [list(p) for p in list(paths)[:5]]
+
+
+def _count_by_type(g: nx.DiGraph) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for _, attrs in g.nodes(data=True):
+        t = attrs.get("type", "unknown")
+        counts[t] = counts.get(t, 0) + 1
+    return counts
+
+
+_PRIMITIVES: dict[str, Any] = {
+    "find_nodes_by_label": _find_nodes_by_label,
+    "find_nodes_by_type": _find_nodes_by_type,
+    "get_neighbors": _get_neighbors,
+    "find_path": _find_path,
+    "count_by_type": _count_by_type,
+}
+
+_TOOLS = [
+    {
+        "name": "find_nodes_by_label",
+        "description": "Fuzzy substring match on node labels/IDs, optional type filter.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {"type": "string"},
+                "node_type": {"type": "string", "enum": _NODE_TYPES},
+            },
+            "required": ["pattern"],
+        },
+    },
+    {
+        "name": "find_nodes_by_type",
+        "description": "Return all nodes of a given type.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"node_type": {"type": "string", "enum": _NODE_TYPES}},
+            "required": ["node_type"],
+        },
+    },
+    {
+        "name": "get_neighbors",
+        "description": "Return nodes and edges within N hops of a node.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node_id": {"type": "string"},
+                "depth": {"type": "integer", "default": 1},
+            },
+            "required": ["node_id"],
+        },
+    },
+    {
+        "name": "find_path",
+        "description": "Find up to 5 simple paths between two nodes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node_a": {"type": "string"},
+                "node_b": {"type": "string"},
+                "max_hops": {"type": "integer", "default": 4},
+            },
+            "required": ["node_a", "node_b"],
+        },
+    },
+    {
+        "name": "count_by_type",
+        "description": "Return node counts grouped by type.",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+]
+
+_SYSTEM_PROMPT = (
+    "You are answering questions about a table-derived knowledge graph. "
+    "Use tools to inspect nodes/edges, then provide a concise answer citing "
+    "specific node IDs and relationship labels as evidence."
+)
+
+
+def _extract_node_ids(result: Any) -> set[str]:
+    ids: set[str] = set()
+    if isinstance(result, dict):
+        if "nodes" in result and isinstance(result["nodes"], list):
+            for n in result["nodes"]:
+                if isinstance(n, dict) and "id" in n:
+                    ids.add(n["id"])
+        if "id" in result and isinstance(result["id"], str):
+            ids.add(result["id"])
+    elif isinstance(result, list):
+        for item in result:
+            if isinstance(item, dict) and "id" in item:
+                ids.add(item["id"])
+            elif isinstance(item, str):
+                ids.add(item)
+            elif isinstance(item, list):
+                ids.update(x for x in item if isinstance(x, str))
+    return ids
+
+
+def _build_subgraph(g: nx.DiGraph, node_ids: set[str]) -> dict[str, Any]:
+    nodes = [_node_dict(n, g.nodes[n]) for n in node_ids if n in g.nodes]
+    edges = [
+        {"source": u, "target": v, **data}
+        for u, v, data in g.edges(data=True)
+        if u in node_ids and v in node_ids
+    ]
+    return {"nodes": nodes, "edges": edges}
+
+
+def _execute_tool(g: nx.DiGraph, name: str, tool_input: dict[str, Any]) -> Any:
+    func = _PRIMITIVES.get(name)
+    if func is None:
+        raise ValueError(f"Unknown tool: {name}")
+    return func(g, **tool_input)
+
+
+def _build_context(g: nx.DiGraph, sources_meta: dict[str, Any]) -> str:
+    counts = _count_by_type(g)
+    sample_tags = [
+        attrs.get("tag")
+        for _, attrs in g.nodes(data=True)
+        if attrs.get("type") == "xbrl_tag" and attrs.get("tag")
+    ][:30]
+    files = [src.get("filename", sid) for sid, src in sources_meta.items()]
+    return (
+        f"Graph summary: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges.\n"
+        f"Node counts by type: {counts}\n"
+        f"Sources ({len(files)}): {files}\n"
+        f"Sample XBRL tags: {sample_tags}"
+    )
+
 
 async def query_graph(
     question: str,
@@ -33,44 +241,58 @@ async def query_graph(
     g: nx.DiGraph = nx.node_link_graph(graph_data.get("graph", {}), directed=True)
     sources_meta = graph_data.get("sources", {})
 
-    # Extract relevant context
     context = _build_context(g, sources_meta)
+    messages: list[dict[str, Any]] = [
+        {"role": "user", "content": f"{context}\n\nQuestion: {question}"}
+    ]
+    primitives_used: list[dict[str, Any]] = []
+    matched_node_ids: set[str] = set()
+    answer_text = ""
 
-    # Ask Claude to interpret the question
-    system_prompt = """\
-You are an expert analyst of structured knowledge graphs extracted from tables.
-You have access to a graph containing entities, their relationships, metrics, and source information.
+    for _ in range(_MAX_TURNS):
+        response = client.messages.create(
+            model=_MODEL,
+            max_tokens=2048,
+            system=_SYSTEM_PROMPT,
+            tools=_TOOLS,
+            messages=messages,
+        )
 
-Your task is to:
-1. Understand the user's question
-2. Identify relevant entities, relationships, and metrics from the graph
-3. Provide a clear, natural-language answer with supporting evidence
-4. Cite the sources and specific data that led to your answer
+        if response.stop_reason != "tool_use":
+            answer_text = "".join(block.text for block in response.content if block.type == "text")
+            break
 
-Always be precise and cite specific entities and their relationships."""
+        messages.append({"role": "assistant", "content": response.content})
+        tool_results: list[dict[str, Any]] = []
 
-    user_message = f"""\
-Here is the knowledge graph context:
+        for block in response.content:
+            if block.type != "tool_use":
+                continue
+            try:
+                result = _execute_tool(g, block.name, block.input)
+                matched_node_ids.update(_extract_node_ids(result))
+                primitives_used.append({"name": block.name, "input": block.input, "result": result})
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": json.dumps(result, default=str),
+                    }
+                )
+            except Exception as e:
+                primitives_used.append({"name": block.name, "input": block.input, "error": str(e)})
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": str(e),
+                        "is_error": True,
+                    }
+                )
 
-{context}
-
-User question: {question}
-
-Please answer the question based on the graph data provided. Include:
-- Direct answer
-- Supporting reasoning from the graph
-- Specific entities and relationships involved
-- Source references
-"""
-
-    response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1024,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_message}],
-    )
-
-    answer_text = response.content[0].text
+        messages.append({"role": "user", "content": tool_results})
+    else:
+        answer_text = "Unable to fully answer within the tool-call budget."
 
     return {
         "question": question,
@@ -78,63 +300,10 @@ Please answer the question based on the graph data provided. Include:
         "graph_nodes": g.number_of_nodes(),
         "graph_edges": g.number_of_edges(),
         "sources": list(sources_meta.keys()),
+        "matched_node_ids": sorted(matched_node_ids),
+        "matched_subgraph": _build_subgraph(g, matched_node_ids),
+        "primitives_used": primitives_used,
     }
-
-
-def _build_context(g: nx.DiGraph, sources_meta: dict[str, Any]) -> str:
-    """Build human-readable context from graph for Claude."""
-    lines = ["## Knowledge Graph Summary\n"]
-
-    # Add source information
-    if sources_meta:
-        lines.append("### Data Sources\n")
-        for source_id, source_info in sources_meta.items():
-            lines.append(f"- {source_info.get('filename', source_id)}")
-            if source_info.get("sheet_name"):
-                lines.append(f" (sheet: {source_info['sheet_name']})")
-            lines.append(f" - Extracted: {source_info.get('extracted_at', 'N/A')}\n")
-
-    # Extract entities with their relationships
-    lines.append("\n### Entities and Relationships\n")
-    entities = {n: a for n, a in g.nodes(data=True) if a.get("type") == "entity"}
-
-    for entity_id, attrs in sorted(entities.items(), key=lambda x: x[1].get("name", "")):
-        name = attrs.get("name", "Unknown")
-        etype = attrs.get("entity_type", "unknown")
-        confidence = attrs.get("confidence", 0.0)
-
-        lines.append(f"**{name}** (type: {etype}, confidence: {confidence:.2f})\n")
-
-        # Add attributes
-        if attrs.get("attributes"):
-            for k, v in attrs["attributes"].items():
-                lines.append(f"  - {k}: {v}\n")
-
-        # Add relationships
-        successors = list(g.successors(entity_id))
-        if successors:
-            for succ_id in successors:
-                succ_attrs = g.nodes.get(succ_id, {})
-                if succ_attrs.get("type") == "entity":
-                    edges = g.get_edge_data(entity_id, succ_id)
-                    if edges:
-                        for edge_data in edges.values():
-                            rel_type = edge_data.get("relation", "related_to")
-                            lines.append(f"  → {rel_type} → {succ_attrs.get('name', succ_id)}\n")
-
-        lines.append("\n")
-
-    # Add metrics
-    metrics = {n: a for n, a in g.nodes(data=True) if a.get("type") == "metric"}
-    if metrics:
-        lines.append("### Metrics\n")
-        for metric_id, attrs in metrics.items():
-            name = attrs.get("name", "Unknown")
-            metric_type = attrs.get("metric_type", "unknown")
-            value = attrs.get("value", "N/A")
-            lines.append(f"- {name} ({metric_type}): {value}\n")
-
-    return "".join(lines)
 
 
 def query_sync(
