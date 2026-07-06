@@ -402,6 +402,70 @@ def extract_table_llm_graph_json(
         raise ValueError(f"Failed to parse Claude graph JSON response: {e}\n{response_text}")
 
 
+def _build_llm_table_bundle_from_content(tables: list[dict]) -> str:
+    """Build one prompt bundle from raw table content strings.
+
+    Each dict must have ``filename`` and ``content`` keys.
+    """
+    sections: list[str] = []
+    for i, t in enumerate(tables):
+        filename = t.get("filename", f"table_{i}.csv")
+        content = t.get("content", "")
+        suffix = Path(filename).suffix.lower()
+        sections.append(
+            f"## TABLE {i + 1}\n"
+            f"filename={filename}\n"
+            f"suffix={suffix}\n"
+            f"{content}"
+        )
+    return "\n\n".join(sections)
+
+
+def extract_tables_from_content(
+    tables: list[dict],
+    client: anthropic.Anthropic,
+) -> dict:
+    """Ask Claude to merge raw table content strings into one graph JSON.
+
+    Args:
+        tables: List of dicts with ``filename`` and ``content`` keys.
+        client: Anthropic client.
+
+    Returns:
+        Graph JSON dict (NetworkX node-link format with metadata).
+    """
+    if not tables:
+        raise ValueError("No tables provided")
+
+    bundle = _build_llm_table_bundle_from_content(tables)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=12000,
+        system=_GRAPH_JSON_PROMPT,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Analyze all of these tables together. Merge overlapping rows, "
+                            "entities, and concepts into a single knowledge graph JSON.\n\n"
+                            f"{bundle}"
+                        ),
+                    }
+                ],
+            }
+        ],
+    )
+
+    response_text = response.content[0].text
+    try:
+        return _extract_json_object(response_text)
+    except (json.JSONDecodeError, ValueError) as e:
+        raise ValueError(f"Failed to parse Claude batch graph JSON response: {e}\n{response_text}")
+
+
 def extract_tables_llm_graph_json(
     table_paths: list[Path],
     client: anthropic.Anthropic,

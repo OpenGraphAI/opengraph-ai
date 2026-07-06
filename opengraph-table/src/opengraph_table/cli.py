@@ -119,8 +119,8 @@ def query(
         console.print("[bold]Answer:[/bold]")
         console.print(result["answer"])
 
-        console.print(f"\n[dim]Sources: {', '.join(result['sources'])}")
-        console.print(f"Graph size: {result['graph_nodes']} nodes, {result['graph_edges']} edges[/dim]")
+        console.print(f"\n[dim]Sources: {', '.join(result['sources'])}[/dim]")
+        console.print(f"[dim]Graph size: {result['graph_nodes']} nodes, {result['graph_edges']} edges[/dim]")
 
     except Exception as e:
         console.print(f"[bold red]Error: {e}[/bold red]")
