@@ -29,18 +29,18 @@ and relationships by calling the `submit_extraction` tool exactly once.
 
 ## Entities
 Identify named entities mentioned in the document: people, organizations, \
-places, products, concepts, and events. For each entity, assign a stable, \
-snake_case `id` that would naturally match the same entity if it appeared in \
-a different document (e.g. "anthropic", "sam_altman", "san_francisco"). \
-Prefer SPECIFIC labels over generic ones: use "openai" rather than "company", \
-and "sam_altman" rather than "ceo". If two distinct entities would otherwise \
-collide on the same id (e.g. two different people named "john_smith"), \
-disambiguate with a numeric suffix such as "john_smith_1" and "john_smith_2".
+places, products, concepts, and events. For each entity, assign a stable \
+`id` that would naturally match the same entity if it appeared in a \
+different document. Prefer SPECIFIC labels over generic ones: use "openai" \
+rather than "company", and "sam_altman" rather than "ceo". If two distinct \
+entities would otherwise collide on the same label (e.g. two different \
+people named "john_smith"), disambiguate with a numeric suffix such as \
+"entity_john_smith_1" and "entity_john_smith_2".
 
 ## Topics
 Identify the top 1 to 3 topics that best describe what the document is about. \
 Topics are not drawn from a closed vocabulary — propose free-form snake_case \
-labels such as "machine_learning" or "venture_capital".
+labels such as "concept_machine_learning" or "concept_venture_capital".
 
 ## Attributes
 Extract attributes of the document and of individual entities using the \
@@ -58,8 +58,21 @@ vocabulary: works_at, founded, invested_in, acquired, located_in, part_of, \
 competitor_of, collaborates_with, mentions. Do not invent new relation types; \
 if a relationship doesn't fit, either omit it or use "mentions".
 
+## Node IDs
+Every node id must be globally unique across ALL node types in the \
+extraction and must be snake_case. Use a type prefix matching the node's \
+category, followed by a descriptive snake_case label:
+- Entity nodes (including entities of type "concept" or "event"): \
+`entity_<label>`, e.g. "entity_ai_safety", "entity_openai", \
+"entity_2024_election".
+- Topic nodes: `concept_<label>`, e.g. "concept_machine_learning".
+- Attribute nodes: `attr_<label>`, e.g. "attr_warm_tone".
+- Claim nodes: `claim_<label>`, e.g. "claim_acme_raised_series_a".
+When the same label appears more than once within a type, append `_1`, \
+`_2`, etc. (e.g. "entity_transformer_1", "entity_transformer_2"). NEVER \
+reuse the same id string across different node types.
+
 ## General instructions
-- Every node id must be unique within the extraction and must be snake_case.
 - Every edge's source and target must reference an id of a node you actually \
 extracted (including the document node id, which will be provided to you).
 - Assign a confidence score between 0.0 and 1.0 to every node and edge, \

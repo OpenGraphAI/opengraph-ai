@@ -7,6 +7,22 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _SNAKE_CASE_RE = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*$")
 
+
+def _validate_prefixed_id(value: str, prefix: str) -> str:
+    """Validate that `value` is snake_case and carries the given type prefix.
+
+    Node IDs must be globally unique across all node types in an extraction;
+    a type prefix keeps each node type's ID namespace disjoint from the
+    others so the same label can never collide across types.
+    """
+
+    if not _SNAKE_CASE_RE.match(value):
+        raise ValueError(f"id must be snake_case, got {value!r}")
+    if not value.startswith(prefix):
+        raise ValueError(f"id must start with {prefix!r}, got {value!r}")
+    return value
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
@@ -30,7 +46,10 @@ class EntityNode(BaseModel):
 
     id: str = Field(
         ...,
-        description="Snake_case label with a disambiguating suffix, e.g. 'john_smith_1'",
+        description=(
+            "'entity_' prefix followed by a snake_case label and a disambiguating "
+            "suffix, e.g. 'entity_john_smith_1'"
+        ),
     )
     label: str = Field(..., description="Human-readable name of the entity")
     entity_type: Literal["person", "organization", "place", "product", "concept", "event"] = Field(
@@ -40,10 +59,8 @@ class EntityNode(BaseModel):
 
     @field_validator("id")
     @classmethod
-    def id_must_be_snake_case(cls, value: str) -> str:
-        if not _SNAKE_CASE_RE.match(value):
-            raise ValueError(f"id must be snake_case, got {value!r}")
-        return value
+    def id_must_be_prefixed_snake_case(cls, value: str) -> str:
+        return _validate_prefixed_id(value, "entity_")
 
 
 class TopicNode(BaseModel):
@@ -55,9 +72,16 @@ class TopicNode(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    id: str = Field(..., description="Identifier for the topic")
+    id: str = Field(
+        ..., description="'concept_' prefix followed by a snake_case label, e.g. 'concept_machine_learning'"
+    )
     label: str = Field(..., description="Human-readable topic name")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score")
+
+    @field_validator("id")
+    @classmethod
+    def id_must_be_prefixed_snake_case(cls, value: str) -> str:
+        return _validate_prefixed_id(value, "concept_")
 
 
 class AttributeNode(BaseModel):
@@ -65,12 +89,19 @@ class AttributeNode(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    id: str = Field(..., description="Identifier for the attribute")
+    id: str = Field(
+        ..., description="'attr_' prefix followed by a snake_case label, e.g. 'attr_warm_tone'"
+    )
     key: Literal["role", "industry", "location", "size", "founded", "status", "description"] = Field(
         ..., description="Controlled-vocabulary attribute key"
     )
     value: str = Field(..., description="Attribute value")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score")
+
+    @field_validator("id")
+    @classmethod
+    def id_must_be_prefixed_snake_case(cls, value: str) -> str:
+        return _validate_prefixed_id(value, "attr_")
 
 
 class ClaimNode(BaseModel):
@@ -78,9 +109,16 @@ class ClaimNode(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    id: str = Field(..., description="Identifier for the claim")
+    id: str = Field(
+        ..., description="'claim_' prefix followed by a snake_case label, e.g. 'claim_acme_raised_series_a'"
+    )
     text: str = Field(..., max_length=200, description="The literal assertion text")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score")
+
+    @field_validator("id")
+    @classmethod
+    def id_must_be_prefixed_snake_case(cls, value: str) -> str:
+        return _validate_prefixed_id(value, "claim_")
 
     @field_validator("text")
     @classmethod
