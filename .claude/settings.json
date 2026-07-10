@@ -13,7 +13,8 @@
       "Skill(claude-api)",
       "Skill(claude-api:*)",
       "Bash(env)",
-      "Bash(ant auth *)"
+      "Bash(ant auth *)",
+      "Bash(python3 -c \"import networkx; print\\(networkx.__version__\\)\")"
     ]
   }
 }

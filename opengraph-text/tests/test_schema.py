@@ -28,24 +28,24 @@ def _valid_extraction() -> DocumentExtraction:
     )
     entities = [
         EntityNode(
-            id="jane_doe_1",
+            id="entity_jane_doe_1",
             label="Jane Doe",
             entity_type="person",
             confidence=0.95,
         ),
         EntityNode(
-            id="acme_corp_1",
+            id="entity_acme_corp_1",
             label="Acme Corp",
             entity_type="organization",
             confidence=0.9,
         ),
     ]
     topics = [
-        TopicNode(id="venture_capital", label="Venture Capital", confidence=0.8),
+        TopicNode(id="concept_venture_capital", label="Venture Capital", confidence=0.8),
     ]
     attributes = [
         AttributeNode(
-            id="jane_doe_role",
+            id="attr_jane_doe_role",
             key="role",
             value="CEO",
             confidence=0.85,
@@ -66,22 +66,22 @@ def _valid_extraction() -> DocumentExtraction:
         attributes=attributes,
         claims=claims,
         contains_edges=[
-            ContainsEdge(source="acme_pitch_deck", target="jane_doe_1", confidence=0.9),
-            ContainsEdge(source="acme_pitch_deck", target="acme_corp_1", confidence=0.9),
+            ContainsEdge(source="acme_pitch_deck", target="entity_jane_doe_1", confidence=0.9),
+            ContainsEdge(source="acme_pitch_deck", target="entity_acme_corp_1", confidence=0.9),
         ],
         about_topic_edges=[
-            AboutTopicEdge(source="acme_pitch_deck", target="venture_capital", confidence=0.8),
+            AboutTopicEdge(source="acme_pitch_deck", target="concept_venture_capital", confidence=0.8),
         ],
         has_attribute_edges=[
-            HasAttributeEdge(source="jane_doe_1", target="jane_doe_role", confidence=0.85),
+            HasAttributeEdge(source="entity_jane_doe_1", target="attr_jane_doe_role", confidence=0.85),
         ],
         states_edges=[
             StatesEdge(source="acme_pitch_deck", target="claim_1", confidence=0.7),
         ],
         relates_to_edges=[
             RelatesToEdge(
-                source="jane_doe_1",
-                target="acme_corp_1",
+                source="entity_jane_doe_1",
+                target="entity_acme_corp_1",
                 relation="works_at",
                 confidence=0.9,
             ),
@@ -98,33 +98,48 @@ def test_valid_extraction_passes_validation():
 def test_malformed_extraction_fails_validation():
     extraction = _valid_extraction()
 
-    # Introduce a duplicate node id: reuse the document's id for a topic.
+    # Introduce a duplicate node id: reuse an existing topic's id for another topic.
     extraction.topics.append(
-        TopicNode(id="acme_pitch_deck", label="Duplicate", confidence=0.5)
+        TopicNode(id="concept_venture_capital", label="Duplicate", confidence=0.5)
     )
 
     # Introduce a dangling edge reference to a node id that doesn't exist.
     extraction.contains_edges.append(
-        ContainsEdge(source="acme_pitch_deck", target="nonexistent_entity", confidence=0.5)
+        ContainsEdge(source="acme_pitch_deck", target="entity_nonexistent", confidence=0.5)
     )
 
     errors = validate_extraction(extraction)
 
     assert len(errors) == 2
-    assert any("Duplicate node id" in e and "acme_pitch_deck" in e for e in errors)
-    assert any("nonexistent_entity" in e for e in errors)
+    assert any("Duplicate node id" in e and "concept_venture_capital" in e for e in errors)
+    assert any("entity_nonexistent" in e for e in errors)
 
 
 def test_entity_id_must_be_snake_case():
     with pytest.raises(ValidationError):
         EntityNode(
-            id="Jane Doe",
+            id="entity_Jane Doe",
             label="Jane Doe",
             entity_type="person",
             confidence=0.9,
         )
 
 
+def test_entity_id_must_have_entity_prefix():
+    with pytest.raises(ValidationError):
+        EntityNode(
+            id="jane_doe_1",
+            label="Jane Doe",
+            entity_type="person",
+            confidence=0.9,
+        )
+
+
+def test_topic_id_must_have_concept_prefix():
+    with pytest.raises(ValidationError):
+        TopicNode(id="ai", label="AI", confidence=0.9)
+
+
 def test_confidence_out_of_range_rejected():
     with pytest.raises(ValidationError):
-        TopicNode(id="ai", label="AI", confidence=1.5)
+        TopicNode(id="concept_ai", label="AI", confidence=1.5)
