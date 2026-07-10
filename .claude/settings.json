@@ -8,7 +8,12 @@
       "Bash(python -m pytest tests/ -q)",
       "Bash(python -c \"from opengraph_image.cli import app; print\\('ok'\\)\")",
       "Bash(echo \"exit code: $?\")",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(python3 -c ' *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(env)",
+      "Bash(ant auth *)"
     ]
   }
 }
