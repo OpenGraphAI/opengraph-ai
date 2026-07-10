@@ -1,0 +1,14 @@
+Anthropic, an AI safety company based in San Francisco, announced today that
+its CEO Dario Amodei will keynote an upcoming conference on responsible AI
+development. The company, founded in 2021, has raised significant funding
+from investors including Google and Spark Capital.
+
+Anthropic's flagship product, Claude, is a large language model used by
+developers and enterprises to build AI-powered applications. The company
+has stated that its mission is to ensure that transformative AI is developed
+safely and benefits all of humanity.
+
+In a related development, OpenAI, a competitor of Anthropic, also based in
+San Francisco, released a new version of its GPT model this week. Industry
+analysts see the two companies as leading a broader race toward advanced
+AI systems.
