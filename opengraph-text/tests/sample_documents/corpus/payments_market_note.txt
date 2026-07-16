@@ -1,0 +1,19 @@
+Payments Infrastructure Market Note
+
+The payments infrastructure sector has seen a wave of venture capital
+activity this year. Acme Corp Inc, a San Francisco fintech, closed a Series A
+round in the first quarter, while its rival Fintaro raised a larger round
+just weeks later.
+
+Investors point to small-business adoption of embedded payments as the main
+driver. Northbridge Ventures, an active investor in the space, has now
+backed two companies in the sector within six months.
+
+Industry watchers note that Jane Doe, CEO of Acme Corp, has become a visible
+voice on regulatory questions around payment compliance, appearing on
+several fintech panels this spring. Her prior experience at Globex Inc is
+often cited as a reason investors trust her operational judgment.
+
+Analysts expect consolidation in the space over the next 18 months, with
+smaller players likely to be acquired by larger platforms. Fintaro has
+already signaled interest in acquiring smaller compliance-focused startups.

@@ -1,0 +1,30 @@
+[project]
+name = "opengraph-text"
+version = "0.1.0"
+description = "Text-only knowledge-graph schema (v0)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.111.0",
+    "networkx>=3.6.1",
+    "pydantic>=2.13.4",
+    "pypdf>=5.0.0",
+    "python-dotenv>=1.0.0",
+    "tqdm>=4.68.3",
+    "typer>=0.26.7",
+]
+
+[project.scripts]
+opengraph-text = "opengraph_text:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.0",
+]

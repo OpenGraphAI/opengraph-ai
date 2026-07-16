@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -14,6 +14,7 @@ resolution-markers = [
 members = [
     "opengraph-ai",
     "opengraph-image",
+    "opengraph-text",
 ]
 
 [[package]]
@@ -1195,6 +1196,25 @@ dev = [
     { name = "pytest", specifier = ">=9.1.0" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
 ]
+
+[[package]]
+name = "opengraph-text"
+version = "0.1.0"
+source = { editable = "opengraph-text" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.13.4" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.0" }]
 
 [[package]]
 name = "packaging"
