@@ -216,6 +216,20 @@ class DocumentExtraction(BaseModel):
     relates_to_edges: list[RelatesToEdge] = Field(default_factory=list)
 
 
+# ---------------------------------------------------------------------------
+# Query results
+# ---------------------------------------------------------------------------
+
+
+class QueryResult(BaseModel):
+    """Result of a natural-language query over a DocumentGraph."""
+
+    matched_node_ids: list[str] = Field(default_factory=list)
+    matched_subgraph: dict = Field(default_factory=dict)
+    summary: str
+    primitives_used: list[dict] = Field(default_factory=list)
+
+
 def validate_extraction(extraction: DocumentExtraction) -> list[str]:
     """Validate the structural integrity of a DocumentExtraction.
 
