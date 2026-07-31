@@ -82,7 +82,7 @@ def query_graph(question: str, graph_path: str = "") -> str:
         graph = _load_graph(graph_path)
         client = anthropic.Anthropic()
         result = run_query(graph, question, client)
-        return json.dumps({"status": "ok", **result})
+        return json.dumps({"status": "ok", **result.model_dump()})
     except Exception as e:
         return _error(str(e))
 
