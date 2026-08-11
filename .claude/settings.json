@@ -14,7 +14,14 @@
       "Skill(claude-api:*)",
       "Bash(env)",
       "Bash(ant auth *)",
-      "Bash(python3 -c \"import networkx; print\\(networkx.__version__\\)\")"
+      "Bash(python3 -c \"import networkx; print\\(networkx.__version__\\)\")",
+      "Bash(python3 -c \"import nbformat; print\\(nbformat.__version__\\)\")",
+      "Bash(python3 -m pip install --user -q nbformat)",
+      "Bash(ls opengraph-image/notebooks 2>&1; which uv 2>&1; mkdir -p opengraph-image/notebooks && ls opengraph-image/)",
+      "Bash(python3 \"/private/tmp/claude-501/-Users-andrealiao-Documents-GitHub-opengraph-ai/b045222c-77ea-4f33-9049-ad8800228efb/scratchpad/build_notebook.py\")"
+    ],
+    "additionalDirectories": [
+      "/Users/andrealiao/Documents/GitHub/opengraph-ai/opengraph-image"
     ]
   }
 }
