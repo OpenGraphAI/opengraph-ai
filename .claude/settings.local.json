@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import networkx\")",
+      "Bash(pip install *)",
+      "Bash(python3 -m pip install --user -q networkx)",
+      "Bash(python3 -c \"import networkx; print\\(networkx.__version__\\)\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('graph.json'\\)\\); print\\('has links:', 'links' in d, ' has edges:', 'edges' in d\\)\")",
+      "Bash(python3 cell13_extracted.py)",
+      "Bash(echo \"--- exit code: $? ---\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(uv venv *)",
+      "Bash(uv pip *)",
+      "Bash(curl -s https://pypi.org/pypi/networkx/json)"
+    ]
+  },
+  "enabledPlugins": {}
+}
