@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.111.0",
-    "mcp>=1.28.0",
+    "mcp>=1.28.0,<2",
     "networkx>=3.6.1",
     "pillow>=12.2.0",
     "pydantic>=2.13.4",
