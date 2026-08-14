@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "opengraph-table": {
-      "command": "/Users/d/Documents/GitHub/opengraph-ai/.venv/bin/opengraph-table-mcp",
-      "args": []
-    }
-  }
-}
