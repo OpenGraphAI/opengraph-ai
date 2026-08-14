@@ -1,1 +1,0 @@
-"""Schema definitions sub-package."""

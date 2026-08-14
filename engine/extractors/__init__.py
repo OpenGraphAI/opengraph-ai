@@ -1,1 +1,0 @@
-"""Extractor sub-package."""

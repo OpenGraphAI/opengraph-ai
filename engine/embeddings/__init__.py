@@ -1,1 +1,0 @@
-"""Embeddings sub-package."""
