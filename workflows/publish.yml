@@ -1,0 +1,35 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "opengraph-image-v*"
+      - "opengraph-text-v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Resolve package folder from tag
+        run: |
+          PKG=$(echo "${GITHUB_REF_NAME}" | sed 's/-v[0-9].*//')
+          echo "PKG=$PKG" >> "$GITHUB_ENV"
+          echo "Publishing package: $PKG"
+
+      - name: Build
+        run: |
+          cd "$PKG"
+          uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ env.PKG }}/dist
