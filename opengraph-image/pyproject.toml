@@ -1,12 +1,22 @@
 [project]
 name = "opengraph-image"
 version = "0.1.0"
-description = "Image-only knowledge-graph MCP server (v0)"
+description = "Turn any images into queryable knowledge graphs — MCP server, CLI, and Python API"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Andrea Liao", email = "andrea.liyu.liao@gmail.com" }
+    { name = "OpenGraph AI", email = "team@opengraphai.io" }
 ]
 requires-python = ">=3.11"
+keywords = ["knowledge-graph", "mcp", "mcp-server", "multimodal", "image", "claude", "claude-code", "codex", "ai", "ai-agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "anthropic>=0.111.0",
     "mcp>=1.28.0,<2",
@@ -18,6 +28,11 @@ dependencies = [
     "typer>=0.26.7",
 ]
 
+[project.urls]
+Homepage = "https://github.com/OpenGraphAI/opengraph-ai"
+Repository = "https://github.com/OpenGraphAI/opengraph-ai"
+Issues = "https://github.com/OpenGraphAI/opengraph-ai/issues"
+
 [project.scripts]
 opengraph-image = "opengraph_image:main"
 opengraph-image-mcp = "opengraph_image:mcp_main"
@@ -25,6 +40,12 @@ opengraph-image-mcp = "opengraph_image:mcp_main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opengraph_image"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/", "notebooks/", "opengraph-out/"]
 
 [build-system]
 requires = ["hatchling"]

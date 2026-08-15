@@ -1,9 +1,22 @@
 [project]
 name = "opengraph-text"
 version = "0.1.0"
-description = "Add your description here"
+description = "Turn folders of text documents (.txt, .md, .pdf) into queryable knowledge graphs — MCP server, CLI, and Python API"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "OpenGraph AI", email = "team@opengraphai.io" }
+]
 requires-python = ">=3.11"
+keywords = ["knowledge-graph", "mcp", "mcp-server", "text", "documents", "pdf", "claude",  "claude-code", "codex", "ai","ai-agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "anthropic>=0.111.0",
     "mcp>=1.28.0,<2",
@@ -15,13 +28,28 @@ dependencies = [
     "typer>=0.26.7",
 ]
 
+[project.urls]
+Homepage = "https://github.com/OpenGraphAI/opengraph-ai"
+Repository = "https://github.com/OpenGraphAI/opengraph-ai"
+Issues = "https://github.com/OpenGraphAI/opengraph-ai/issues"
+
 [project.scripts]
 opengraph-text = "opengraph_text.cli:app"
 opengraph-text-mcp = "opengraph_text.server:main"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opengraph_text"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/", "opengraph-out/"]
+
 [build-system]
-requires = ["uv_build>=0.11.25,<0.12.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
