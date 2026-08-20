@@ -40,13 +40,6 @@ def summary(
     typer.echo(json.dumps(graph.summary(), indent=2))
 
 
-@app.command()
-def ingest(
-    image_dir: str = typer.Argument(..., help="Directory of images to ingest."),
-) -> None:
-    """Ingest images from IMAGE_DIR into the knowledge graph."""
-    raise NotImplementedError("Not yet implemented.")
-
 
 @app.command()
 def query(
