@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from opengraph_image.graph import ImageGraph
+from opengraph_image.graph import ImageGraph, build_graph_from_folder
 from opengraph_image.schema import (
     AttributeNode,
     ContainsEdge,
@@ -222,3 +222,29 @@ def test_to_json_and_from_json(two_extractions):
         g2 = ImageGraph.from_json(path)
         assert g2._g.number_of_nodes() == g._g.number_of_nodes()
         assert g2._g.number_of_edges() == g._g.number_of_edges()
+
+
+def test_build_graph_from_folder_writes_json_and_html(tmp_path, monkeypatch):
+    """build_graph_from_folder should produce both graph.json and graph.html,
+    without making any real API calls."""
+    image_path = tmp_path / "dummy.jpg"
+    image_path.write_bytes(b"not a real image")
+
+    def fake_extract_image(path: Path, client) -> ImageExtraction:
+        return ImageExtraction(
+            image=ImageNode(id=path.stem, path=str(path), width=800, height=600, format="JPEG"),
+            objects=[ObjectNode(id="cat_1", label="cat", confidence=0.9)],
+            contains_edges=[ContainsEdge(source=path.stem, target="cat_1", confidence=0.9)],
+        )
+
+    monkeypatch.setattr("opengraph_image.extract.extract_image", fake_extract_image)
+    monkeypatch.setattr("anthropic.Anthropic", lambda *args, **kwargs: object())
+
+    output = tmp_path / "opengraph-out" / "graph.json"
+    graph = build_graph_from_folder(tmp_path, output)
+
+    assert isinstance(graph, ImageGraph)
+    assert output.exists()
+    html_output = output.parent / "graph.html"
+    assert html_output.exists()
+    assert "cytoscape" in html_output.read_text().lower()
