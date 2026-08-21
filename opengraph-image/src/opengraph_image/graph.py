@@ -213,6 +213,58 @@ class ImageGraph:
         g._g = nx.node_link_graph(data, directed=True, multigraph=True)
         return g
 
+    def to_vis_data(self) -> dict:
+        """Return a plain {nodes, edges} dict for visualization, read straight
+        from the networkx graph (independent of the on-disk JSON key names)."""
+
+        def label_for(node_id: str, attrs: dict) -> str:
+            node_type = attrs.get("type")
+            if node_type == "image":
+                return Path(attrs.get("path", node_id)).name
+            if node_type in ("object", "scene"):
+                return attrs.get("label", node_id)
+            if node_type == "attribute":
+                return f"{attrs.get('key', '')}={attrs.get('value', '')}"
+            if node_type == "text_span":
+                text = attrs.get("text", node_id)
+                return text if len(text) <= 40 else text[:40] + "..."
+            return node_id
+
+        nodes = []
+        for node_id, attrs in self._g.nodes(data=True):
+            node_type = attrs.get("type", "unknown")
+            node: dict = {
+                "id": node_id,
+                "type": node_type,
+                "label": label_for(node_id, attrs),
+            }
+            if "confidence" in attrs:
+                node["confidence"] = attrs["confidence"]
+            if "seen_in" in attrs:
+                node["seen_in"] = attrs["seen_in"]
+            if node_type == "image" and "path" in attrs:
+                node["path"] = attrs["path"]
+            elif node_type == "attribute":
+                if "key" in attrs:
+                    node["key"] = attrs["key"]
+                if "value" in attrs:
+                    node["value"] = attrs["value"]
+            elif node_type == "text_span" and "text" in attrs:
+                node["text"] = attrs["text"]
+            nodes.append(node)
+
+        edges = [
+            {
+                "source": src,
+                "target": tgt,
+                "relation": attrs.get("relation", "unknown"),
+                "confidence": attrs.get("confidence"),
+            }
+            for src, tgt, attrs in self._g.edges(data=True)
+        ]
+
+        return {"nodes": nodes, "edges": edges}
+
     def summary(self) -> dict:
         """Return high-level graph statistics."""
         node_count_by_type: dict[str, int] = defaultdict(int)
@@ -280,6 +332,14 @@ def build_graph_from_folder(folder: Path, output: Path) -> ImageGraph:
 
     graph.to_json(output)
     print(f"Graph saved to {output}")
+
+    try:
+        from opengraph_image.render import render_graph_html
+
+        html_output = render_graph_html(graph, output.parent / "graph.html")
+        print(f"Graph visualization saved to {html_output}")
+    except Exception as e:
+        print(f"Warning: failed to render graph.html: {e}")
 
     s = graph.summary()
     print(json.dumps(s, indent=2))

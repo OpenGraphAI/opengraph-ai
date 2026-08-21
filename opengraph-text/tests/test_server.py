@@ -11,7 +11,7 @@ from opengraph_text.server import mcp
 
 
 @pytest.mark.asyncio
-async def test_lists_five_tools() -> None:
+async def test_lists_six_tools() -> None:
     async with create_connected_server_and_client_session(mcp._mcp_server) as session:
         result = await session.list_tools()
         tool_names = {tool.name for tool in result.tools}
@@ -21,6 +21,7 @@ async def test_lists_five_tools() -> None:
             "get_document_entities",
             "list_documents",
             "graph_summary",
+            "build_graph_html",
         }
 
 

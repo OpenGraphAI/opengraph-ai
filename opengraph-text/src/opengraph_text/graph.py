@@ -241,6 +241,60 @@ class DocumentGraph:
         )
         return instance
 
+    def to_vis_data(self) -> dict:
+        """Return a plain {nodes, edges} dict for visualization, read straight
+        from self.graph (independent of the on-disk JSON key names)."""
+
+        def label_for(node_id: str, data: dict) -> str:
+            node_type = data.get("type")
+            if node_type == "document":
+                return Path(data.get("path", node_id)).name
+            if node_type in ("entity", "topic"):
+                return data.get("label", node_id)
+            if node_type == "attribute":
+                return f"{data.get('key', '')}={data.get('value', '')}"
+            if node_type == "claim":
+                text = data.get("text", node_id)
+                return text if len(text) <= 40 else text[:40] + "..."
+            return node_id
+
+        nodes = []
+        for node_id, data in self.graph.nodes(data=True):
+            node_type = data.get("type", "unknown")
+            node: dict = {
+                "id": node_id,
+                "type": node_type,
+                "label": label_for(node_id, data),
+            }
+            if "confidence" in data:
+                node["confidence"] = data["confidence"]
+            if "seen_in" in data:
+                node["seen_in"] = data["seen_in"]
+            if node_type == "document" and "path" in data:
+                node["path"] = data["path"]
+            elif node_type == "entity" and "entity_type" in data:
+                node["entity_type"] = data["entity_type"]
+            elif node_type == "attribute":
+                if "key" in data:
+                    node["key"] = data["key"]
+                if "value" in data:
+                    node["value"] = data["value"]
+            elif node_type == "claim" and "text" in data:
+                node["text"] = data["text"]
+            nodes.append(node)
+
+        edges = [
+            {
+                "source": u,
+                "target": v,
+                "relation": data.get("relation", "unknown"),
+                "confidence": data.get("confidence"),
+            }
+            for u, v, data in self.graph.edges(data=True)
+        ]
+
+        return {"nodes": nodes, "edges": edges}
+
     def summary(self) -> dict:
         graph = self.graph
 
@@ -314,6 +368,14 @@ def build_graph_from_folder(folder: Path, output: Path) -> DocumentGraph:
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     graph.to_json(output)
+
+    try:
+        from .render import render_graph_html
+
+        html_output = render_graph_html(graph, output.parent / "graph.html")
+        print(f"Graph visualization saved to {html_output}")
+    except Exception as e:
+        print(f"Warning: failed to render graph.html: {e}")
 
     print(json.dumps(graph.summary(), indent=2))
 

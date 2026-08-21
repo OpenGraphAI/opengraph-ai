@@ -60,13 +60,17 @@ def build_graph(folder_path: str) -> str:
 
         output = folder / "opengraph-out" / "graph.json"
         graph = build_graph_from_folder(folder, output)
-        return json.dumps(
-            {
-                "status": "ok",
-                "graph_path": str(output),
-                "summary": graph.summary(),
-            }
-        )
+
+        result = {
+            "status": "ok",
+            "graph_path": str(output),
+            "summary": graph.summary(),
+        }
+        html_path = output.parent / "graph.html"
+        if html_path.exists():
+            result["html_path"] = str(html_path)
+
+        return json.dumps(result)
     except Exception as e:
         return _error(str(e))
 
@@ -154,6 +158,22 @@ def graph_summary(graph_path: str = "") -> str:
     try:
         graph = _load_graph(graph_path)
         return json.dumps({"status": "ok", "summary": graph.summary()})
+    except Exception as e:
+        return _error(str(e))
+
+
+@mcp.tool()
+def build_graph_html(graph_path: str = "") -> str:
+    """Render a previously built knowledge graph to an interactive graph.html
+    file, written next to the resolved graph.json."""
+    try:
+        from opengraph_text.render import render_graph_html
+
+        graph = _load_graph(graph_path)
+        output = _resolve_graph_path(graph_path).parent / "graph.html"
+        render_graph_html(graph, output)
+
+        return json.dumps({"status": "ok", "html_path": str(output)})
     except Exception as e:
         return _error(str(e))
 
