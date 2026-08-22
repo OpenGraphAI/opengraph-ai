@@ -1,6 +1,6 @@
 [project]
 name = "opengraph-image"
-version = "0.1.0"
+version = "0.1.2"
 description = "Turn any images into queryable knowledge graphs — MCP server, CLI, and Python API"
 readme = "README.md"
 license = "Apache-2.0"
