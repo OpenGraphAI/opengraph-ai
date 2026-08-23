@@ -39,6 +39,8 @@
 
 The first release, **`opengraph-image`**, provides an MCP server and CLI that extract **nodes**, **edges**, and **relationships** from images to automatically construct knowledge graphs.
 
+> **Live sample:** [Robot Scene Memory](https://opengraphai.github.io/opengraph-samples-robot-scene-memory/) turns selected BridgeData V2 robot-camera observations into a read-only D3.js graph gallery, with source data and reproduction steps in the [sample repository](https://github.com/OpenGraphAI/opengraph-samples-robot-scene-memory).
+
 ---
 
 ## ✨ What is **`opengraph-image`**?
