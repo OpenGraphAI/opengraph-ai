@@ -167,6 +167,12 @@ Claude will call `build_graph`, `query_graph`, `get_image_entities`, `list_image
 - AI agents can combine information from text, images, audio, and video into a unified knowledge graph
 - Structured graph representations improve retrieval, reasoning, and explainability for complex AI workflows
 
+### 🏥 Healthcare & Medical Research
+
+- Knowledge graphs can connect medical images, clinical notes, laboratory results, diseases, symptoms, and treatments in a structured representation.
+- Researchers can explore relationships among imaging findings, medical concepts, and patient information to support medical image retrieval and analysis.
+- Patient-centered knowledge graphs can integrate information from different healthcare sources to provide a more unified view of a patient's medical history.
+
 ---
 
 ## 🤝 Contributing
