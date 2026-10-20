@@ -1,0 +1,60 @@
+[project]
+name = "opengraph-audio"
+version = "0.1.0"
+description = "Turn audio recordings into queryable knowledge graphs — MCP server, CLI, and Python API"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "OpenGraph AI", email = "team@opengraphai.io" }
+]
+requires-python = ">=3.11"
+keywords = ["knowledge-graph", "mcp", "mcp-server", "audio", "transcription", "claude", "claude-code", "codex", "ai", "ai-agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "opengraph-text",
+    "anthropic>=0.111.0",
+    "httpx>=0.28.1",
+    "mcp>=1.28.0,<2",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "typer>=0.26.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/OpenGraphAI/opengraph-ai"
+Repository = "https://github.com/OpenGraphAI/opengraph-ai"
+Issues = "https://github.com/OpenGraphAI/opengraph-ai/issues"
+
+[project.scripts]
+opengraph-audio = "opengraph_audio:main"
+opengraph-audio-mcp = "opengraph_audio:mcp_main"
+
+[tool.uv.sources]
+opengraph-text = { path = "../opengraph-text", editable = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opengraph_audio"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["tests/", "opengraph-out/"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.0",
+    "pytest-asyncio>=1.4.0",
+]
