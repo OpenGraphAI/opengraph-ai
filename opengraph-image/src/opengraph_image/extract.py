@@ -10,6 +10,7 @@ from pathlib import Path
 import anthropic
 from dotenv import load_dotenv
 from PIL import Image
+from pydantic import ValidationError
 
 from opengraph_image.schema import ImageExtraction, validate_extraction
 
@@ -18,9 +19,15 @@ load_dotenv(_PROJECT_ROOT / ".env", override=True)
 
 _MAX_LONG_EDGE = 1568
 
+DEFAULT_MODEL = "claude-sonnet-4-6"
+DEFAULT_MAX_TOKENS = 4096
+
+# The extraction schema in the form structured outputs accept.
+_OUTPUT_FORMAT = {"type": "json_schema", "schema": anthropic.transform_schema(ImageExtraction)}
+
 _SYSTEM_PROMPT = """\
-You are a precise visual knowledge-graph extractor. Analyze the provided image and call \
-`submit_extraction` with a complete, structured extraction.
+You are a precise visual knowledge-graph extractor. Analyze the provided image and return a \
+complete, structured extraction.
 
 Guidelines:
 - **Objects**: Be SPECIFIC with labels — use fine-grained species/breed/model names in snake_case \
@@ -42,8 +49,22 @@ whole and for prominent objects. Use concise lowercase values.
 - **IDs**: Stable, descriptive snake_case. All IDs must be globally unique within the extraction.
 - **Confidence**: 0.0–1.0. Prefer 0.7–0.95 for clear detections; lower for ambiguous ones.
 
-Call `submit_extraction` exactly once with a complete, self-consistent extraction.
+Return exactly one complete, self-consistent extraction.
 """
+
+
+class ExtractionError(ValueError):
+    """The model's response could not be used as an extraction.
+
+    ``reason`` is ``"refused"`` (the model declined), ``"truncated"`` (the
+    output hit ``max_tokens``), or ``"invalid"`` (the output did not match the
+    schema or failed referential validation).
+    """
+
+    def __init__(self, reason: str, stop_reason: str | None, message: str) -> None:
+        super().__init__(message)
+        self.reason = reason
+        self.stop_reason = stop_reason
 
 
 def _resize_if_needed(img: Image.Image) -> Image.Image:
@@ -54,8 +75,19 @@ def _resize_if_needed(img: Image.Image) -> Image.Image:
     return img.resize((int(img.width * scale), int(img.height * scale)), Image.LANCZOS)
 
 
-def extract_image(image_path: Path, client: anthropic.Anthropic) -> ImageExtraction:
-    """Extract a knowledge-graph from a single image using Claude vision."""
+def extract_image(
+    image_path: Path,
+    client: anthropic.Anthropic,
+    *,
+    model: str = DEFAULT_MODEL,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+) -> ImageExtraction:
+    """Extract a knowledge-graph from a single image using Claude vision.
+
+    The extraction is requested as structured output, which current Claude
+    models support (they reject forced tool use). Raises ExtractionError when
+    the response cannot be used.
+    """
     img = Image.open(image_path)
     original_format = img.format or "JPEG"
     orig_width, orig_height = img.width, img.height
@@ -69,17 +101,10 @@ def extract_image(image_path: Path, client: anthropic.Anthropic) -> ImageExtract
     image_id = image_path.stem.replace(" ", "_").replace("-", "_").lower()
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4096,
+        model=model,
+        max_tokens=max_tokens,
         system=_SYSTEM_PROMPT,
-        tools=[
-            {
-                "name": "submit_extraction",
-                "description": "Submit the complete knowledge-graph extraction for the image.",
-                "input_schema": ImageExtraction.model_json_schema(),
-            }
-        ],
-        tool_choice={"type": "tool", "name": "submit_extraction"},
+        output_config={"format": _OUTPUT_FORMAT},
         messages=[
             {
                 "role": "user",
@@ -106,18 +131,21 @@ def extract_image(image_path: Path, client: anthropic.Anthropic) -> ImageExtract
         ],
     )
 
-    tool_use_block = next(
-        (block for block in response.content if block.type == "tool_use"),
-        None,
-    )
-    if tool_use_block is None:
-        raise ValueError(f"Model did not call submit_extraction. Response: {response.content}")
+    stop_reason = response.stop_reason
+    if stop_reason == "refusal":
+        raise ExtractionError("refused", stop_reason, "The model declined to extract this image.")
+    if stop_reason == "max_tokens":
+        raise ExtractionError("truncated", stop_reason, f"The extraction exceeded max_tokens ({max_tokens}).")
 
-    extraction = ImageExtraction.model_validate(tool_use_block.input)
+    text = "".join(block.text for block in response.content if block.type == "text")
+    try:
+        extraction = ImageExtraction.model_validate_json(text)
+    except ValidationError as error:
+        raise ExtractionError("invalid", stop_reason, f"The extraction did not match the schema:\n{error}") from error
 
     errors = validate_extraction(extraction)
     if errors:
-        raise ValueError("Extraction failed validation:\n" + "\n".join(errors))
+        raise ExtractionError("invalid", stop_reason, "Extraction failed validation:\n" + "\n".join(errors))
 
     return extraction
 
