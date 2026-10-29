@@ -13,13 +13,10 @@ from typing import Any
 
 import anthropic
 import networkx as nx
-from dotenv import load_dotenv
 
 from opengraph_image.graph import ImageGraph
 from opengraph_image.schema import QueryResult
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
-load_dotenv(_PROJECT_ROOT / ".env", override=True)
 
 _MODEL = "claude-sonnet-4-6"
 _MAX_TURNS = 8
