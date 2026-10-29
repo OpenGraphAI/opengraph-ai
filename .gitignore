@@ -64,3 +64,4 @@ test_output/
 
 # MCP
 .mcp.json
+.DS_Store
