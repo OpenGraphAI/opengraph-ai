@@ -224,6 +224,65 @@ def test_to_json_and_from_json(two_extractions):
         assert g2._g.number_of_edges() == g._g.number_of_edges()
 
 
+def _image_only_graph(*images: tuple[str, str]) -> ImageGraph:
+    """Build a graph containing only image nodes, given (image_id, path) pairs."""
+    g = ImageGraph()
+    for image_id, path in images:
+        g.add_extraction(
+            ImageExtraction(image=ImageNode(id=image_id, path=path, width=10, height=10, format="JPEG"))
+        )
+    return g
+
+
+def test_resolve_image_by_hyphenated_filename_with_different_id():
+    g = _image_only_graph(("my_dog_photo", "/photos/my-dog-photo.jpg"), ("img2", "/photos/img2.jpg"))
+
+    assert g.resolve_image("my-dog-photo.jpg") == "my_dog_photo"
+    # A directory part is ignored; only the filename is compared.
+    assert g.resolve_image("/elsewhere/my-dog-photo.jpg") == "my_dog_photo"
+
+
+def test_resolve_image_by_exact_image_node_id():
+    g = _image_only_graph(("my_dog_photo", "/photos/my-dog-photo.jpg"))
+
+    assert g.resolve_image("my_dog_photo") == "my_dog_photo"
+
+
+def test_resolve_image_missing_filename_raises():
+    g = _image_only_graph(("my_dog_photo", "/photos/my-dog-photo.jpg"))
+
+    with pytest.raises(ValueError, match="Image not found"):
+        g.resolve_image("cat.jpg")
+
+
+def test_resolve_image_does_not_fuzzy_match():
+    g = _image_only_graph(("my_dog_photo", "/photos/my-dog-photo.jpg"))
+
+    for ref in ("dog", "my-dog-photo", "MY-DOG-PHOTO.JPG", "my_dog"):
+        with pytest.raises(ValueError, match="Image not found"):
+            g.resolve_image(ref)
+
+
+def test_resolve_image_rejects_non_image_node_id(two_extractions):
+    ext1, _ = two_extractions
+    g = ImageGraph()
+    g.add_extraction(ext1)
+
+    with pytest.raises(ValueError, match="Image not found"):
+        g.resolve_image("img1__golden_retriever_1")
+
+
+def test_resolve_image_duplicate_filename_raises():
+    g = _image_only_graph(("cat_a", "/trip_a/cat.jpg"), ("cat_b", "/trip_b/cat.jpg"))
+
+    with pytest.raises(ValueError, match="ambiguous") as caught:
+        g.resolve_image("cat.jpg")
+
+    assert "cat_a" in str(caught.value) and "cat_b" in str(caught.value)
+    # The exact IDs named in the error still resolve.
+    assert g.resolve_image("cat_a") == "cat_a"
+
+
 def test_build_graph_from_folder_writes_json_and_html(tmp_path, monkeypatch):
     """build_graph_from_folder should produce both graph.json and graph.html,
     without making any real API calls."""

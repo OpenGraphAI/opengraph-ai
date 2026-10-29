@@ -98,12 +98,18 @@ def query_graph(question: str, graph_path: str = "") -> str:
 
 @mcp.tool()
 def get_image_entities(image_filename: str, graph_path: str = "") -> str:
-    """Return all entities (with edges) connected to the given image node."""
+    """Return all entities (with edges) connected to the given image node.
+
+    image_filename accepts an image filename as returned by list_images
+    (e.g. "my-dog.jpg"; any directory part is ignored) or an exact image-node
+    ID. Matching is exact; an unknown or ambiguous filename returns an error.
+    """
     try:
         from opengraph_image.query import get_neighbors
 
         graph = _load_graph(graph_path)
-        result = get_neighbors(graph, image_filename)
+        image_id = graph.resolve_image(image_filename)
+        result = get_neighbors(graph, image_id)
         return json.dumps({"status": "ok", **result})
     except Exception as e:
         return _error(str(e))

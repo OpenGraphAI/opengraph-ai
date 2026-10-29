@@ -42,6 +42,37 @@ async def test_list_images_missing_graph_returns_well_formed_error() -> None:
         assert "message" in payload
 
 
+@pytest.mark.asyncio
+async def test_get_image_entities_accepts_list_images_filename(tmp_path: Path) -> None:
+    graph = ImageGraph()
+    graph._g.add_node("my_dog_photo", type="image", path=str(tmp_path / "my-dog-photo.jpg"), seen_in=["my_dog_photo"])
+    graph._g.add_node("my_dog_photo__dog_1", type="object", label="dog", confidence=0.9, seen_in=["my_dog_photo"])
+    graph._g.add_edge("my_dog_photo", "my_dog_photo__dog_1", relation="contains", confidence=0.9)
+    graph_path = tmp_path / "opengraph-out" / "graph.json"
+    graph.to_json(graph_path)
+
+    async with create_connected_server_and_client_session(mcp._mcp_server) as session:
+        listed = json.loads(
+            (await session.call_tool("list_images", {"graph_path": str(graph_path)})).content[0].text
+        )
+        assert listed == {"status": "ok", "images": ["my-dog-photo.jpg"]}
+
+        found = json.loads((await session.call_tool(
+            "get_image_entities", {"image_filename": listed["images"][0], "graph_path": str(graph_path)}
+        )).content[0].text)
+        assert found["status"] == "ok"
+        assert {n["id"] for n in found["nodes"]} == {"my_dog_photo", "my_dog_photo__dog_1"}
+        assert found["edges"] == [
+            {"source": "my_dog_photo", "target": "my_dog_photo__dog_1", "relation": "contains", "confidence": 0.9}
+        ]
+
+        missing = json.loads((await session.call_tool(
+            "get_image_entities", {"image_filename": "unknown.jpg", "graph_path": str(graph_path)}
+        )).content[0].text)
+        assert missing["status"] == "error"
+        assert "Image not found" in missing["message"]
+
+
 def test_render_graph_html_embeds_node_data(tmp_path: Path) -> None:
     graph = ImageGraph()
     graph._g.add_node("img_1", type="image", path="/photos/dog.jpg", seen_in=["img_1"])
