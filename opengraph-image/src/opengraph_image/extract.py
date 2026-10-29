@@ -8,14 +8,11 @@ import sys
 from pathlib import Path
 
 import anthropic
-from dotenv import load_dotenv
 from PIL import Image
 from pydantic import ValidationError
 
 from opengraph_image.schema import ImageExtraction, validate_extraction
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
-load_dotenv(_PROJECT_ROOT / ".env", override=True)
 
 _MAX_LONG_EDGE = 1568
 
@@ -155,6 +152,9 @@ if __name__ == "__main__":
         print("Usage: python -m opengraph_image.extract <image_path>", file=sys.stderr)
         sys.exit(1)
 
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env", override=True)
     _client = anthropic.Anthropic()
     _path = Path(sys.argv[1])
     _extraction = extract_image(_path, _client)
