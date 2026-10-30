@@ -210,6 +210,38 @@ class ImageGraph:
         g._g = nx.node_link_graph(data, directed=True, multigraph=True)
         return g
 
+    def resolve_image(self, ref: str) -> str:
+        """Resolve an image filename or exact image-node ID to an image node ID.
+
+        Filenames are compared as Path(ref).name against the filenames of
+        stored image paths (the same names list_images reports). If no
+        filename matches, ref is accepted as an exact image-node ID. No fuzzy
+        or substring matching is done.
+
+        Raises ValueError if ref matches several images or none.
+        """
+        filename = Path(ref).name
+        matches = [
+            node_id
+            for node_id, attrs in self._g.nodes(data=True)
+            if attrs.get("type") == "image" and filename
+            and Path(attrs.get("path", node_id)).name == filename
+        ]
+        if len(matches) > 1:
+            raise ValueError(
+                f"Image filename '{filename}' is ambiguous; it matches image IDs "
+                f"{', '.join(sorted(matches))}. Pass one of these IDs instead."
+            )
+        if matches:
+            return matches[0]
+
+        if ref in self._g.nodes and self._g.nodes[ref].get("type") == "image":
+            return ref
+
+        raise ValueError(
+            f"Image not found: '{ref}'. Use a filename from list_images or an exact image-node ID."
+        )
+
     def to_vis_data(self) -> dict:
         """Return a plain {nodes, edges} dict for visualization, read straight
         from the networkx graph (independent of the on-disk JSON key names)."""
