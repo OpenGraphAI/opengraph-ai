@@ -15,7 +15,7 @@ from opengraph_image.server import mcp
 
 
 @pytest.mark.asyncio
-async def test_lists_six_tools() -> None:
+async def test_lists_seven_tools() -> None:
     async with create_connected_server_and_client_session(mcp._mcp_server) as session:
         result = await session.list_tools()
         tool_names = {tool.name for tool in result.tools}
@@ -23,6 +23,7 @@ async def test_lists_six_tools() -> None:
             "build_graph",
             "query_graph",
             "get_image_entities",
+            "get_provenance",
             "list_images",
             "graph_summary",
             "build_graph_html",
@@ -71,6 +72,39 @@ async def test_get_image_entities_accepts_list_images_filename(tmp_path: Path) -
         )).content[0].text)
         assert missing["status"] == "error"
         assert "Image not found" in missing["message"]
+
+
+@pytest.mark.asyncio
+async def test_get_provenance_returns_sources(tmp_path: Path) -> None:
+    graph = ImageGraph()
+    graph._g.add_node("img_1", type="image", path=str(tmp_path / "dog.jpg"), seen_in=["img_1"])
+    graph._g.add_node("img_1__dog_1", type="object", label="dog", confidence=0.9, seen_in=["img_1"])
+    graph._g.add_edge("img_1", "img_1__dog_1", relation="contains", confidence=0.8)
+    graph_path = tmp_path / "opengraph-out" / "graph.json"
+    graph.to_json(graph_path)
+
+    async with create_connected_server_and_client_session(mcp._mcp_server) as session:
+        payload = json.loads((await session.call_tool(
+            "get_provenance", {"node_id": "img_1__dog_1", "graph_path": str(graph_path)}
+        )).content[0].text)
+
+    assert payload == {
+        "status": "ok",
+        "node": {"id": "img_1__dog_1", "type": "object", "label": "dog", "confidence": 0.9},
+        "source_count": 1,
+        "multi_source": False,
+        "sources": [
+            {
+                "image_id": "img_1",
+                "filename": "dog.jpg",
+                "path": str(tmp_path / "dog.jpg"),
+                "direct_edges": [
+                    {"source": "img_1", "target": "img_1__dog_1", "relation": "contains", "confidence": 0.8}
+                ],
+            }
+        ],
+        "missing_source_ids": [],
+    }
 
 
 def test_render_graph_html_embeds_node_data(tmp_path: Path) -> None:

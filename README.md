@@ -49,11 +49,12 @@ Most `image search` stops at keywords and captions.
 
 `opengraph-image` goes further to look at *every image in a folder*, identifies the `objects`, `scenes`,`attributes` and `relationship` in each one, and links them together into a **knowledge graph** — the same kind of structured representation that powers AI reasoning. 💭 
 
-Once built, that graph is exposed through **6 simple** `MCP tools`, so any MCP-compatible agent (**Claude Code, Claude Desktop, Cursor**, etc.) can reason over your images conversationally:
+Once built, that graph is exposed through **7 simple** `MCP tools`, so any MCP-compatible agent (**Claude Code, Claude Desktop, Cursor**, etc.) can reason over your images conversationally:
 
 - 🏗️ `build_graph` — point it at a folder, get back a fully built knowledge graph
 - 🧠 `query_graph` — ask it anything, get back an answer grounded in the graph
 - 🖼️ `get_image_entities` — drill into one image and see every entity and relationship it contains
+- 🔎 `get_provenance` — trace one graph node back to its stored source images and their direct relationships to it
 - 📝   `list_images` — see every image currently represented in the graph
 - 📊 `graph_summary` — get high-level stats about the graph at a glance
 - 🕸️ `build_graph_html` — render the graph as an interactive HTML visualization you can search, filter, explore, and export as PNG
@@ -132,7 +133,7 @@ claude mcp list
 
 > 🗣️ "List every image you've ingested and summarize the graph."
 
-Claude will call `build_graph`, `query_graph`, `get_image_entities`, `list_images`, `graph_summary`, and `build_graph_html` on your behalf. You never have to touch JSON or write a query language. 🎉
+Claude will call `build_graph`, `query_graph`, `get_image_entities`, `get_provenance`, `list_images`, `graph_summary`, and `build_graph_html` on your behalf. You never have to touch JSON or write a query language. 🎉
 
 > 💡 **Tip:** `opengraph-image` resolves graphs by folder, so as long as you tell the agent which folder your images live in, it'll find (or build) the right `opengraph-out/graph.json` automatically.
 
@@ -145,6 +146,7 @@ Claude will call `build_graph`, `query_graph`, `get_image_entities`, `list_image
 | `build_graph(folder_path)` | Ingests every image in a folder and builds the knowledge graph |
 | `query_graph(question, graph_path)` | Answers a natural-language question grounded in the graph |
 | `get_image_entities(image_filename, graph_path)` | Returns all entities/edges connected to one image |
+| `get_provenance(node_id, graph_path)` | Returns the stored source images for one node and the direct edges between each image and that node |
 | `list_images(graph_path)` | Lists every image currently represented in the graph |
 | `graph_summary(graph_path)` | Returns high-level stats about the graph |
 | `build_graph_html(graph_path)` | Renders the graph to a self-contained interactive `graph.html` (Cytoscape.js) next to `graph.json`, with search, node-type/relation/confidence filters, image provenance, and PNG export |

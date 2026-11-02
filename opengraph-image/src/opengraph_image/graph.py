@@ -15,6 +15,21 @@ from opengraph_image.schema import ImageExtraction
 _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
+def _node_label(node_id: str, attrs: dict) -> str:
+    """Return a short display label for a node, based on its type."""
+    node_type = attrs.get("type")
+    if node_type == "image":
+        return Path(attrs.get("path", node_id)).name
+    if node_type in ("object", "scene"):
+        return attrs.get("label", node_id)
+    if node_type == "attribute":
+        return f"{attrs.get('key', '')}={attrs.get('value', '')}"
+    if node_type == "text_span":
+        text = attrs.get("text", node_id)
+        return text if len(text) <= 40 else text[:40] + "..."
+    return node_id
+
+
 class ImageGraph:
     """Multi-image knowledge graph backed by networkx.MultiDiGraph."""
 
@@ -245,27 +260,13 @@ class ImageGraph:
     def to_vis_data(self) -> dict:
         """Return a plain {nodes, edges} dict for visualization, read straight
         from the networkx graph (independent of the on-disk JSON key names)."""
-
-        def label_for(node_id: str, attrs: dict) -> str:
-            node_type = attrs.get("type")
-            if node_type == "image":
-                return Path(attrs.get("path", node_id)).name
-            if node_type in ("object", "scene"):
-                return attrs.get("label", node_id)
-            if node_type == "attribute":
-                return f"{attrs.get('key', '')}={attrs.get('value', '')}"
-            if node_type == "text_span":
-                text = attrs.get("text", node_id)
-                return text if len(text) <= 40 else text[:40] + "..."
-            return node_id
-
         nodes = []
         for node_id, attrs in self._g.nodes(data=True):
             node_type = attrs.get("type", "unknown")
             node: dict = {
                 "id": node_id,
                 "type": node_type,
-                "label": label_for(node_id, attrs),
+                "label": _node_label(node_id, attrs),
             }
             if "confidence" in attrs:
                 node["confidence"] = attrs["confidence"]
@@ -293,6 +294,69 @@ class ImageGraph:
         ]
 
         return {"nodes": nodes, "edges": edges}
+
+    def get_provenance(self, node_id: str) -> dict:
+        """Return the source images recorded for an exact node ID.
+
+        Sources come from the node's seen_in list (an image node is its own
+        source). For each source image, direct_edges lists every stored edge
+        between that image and the node, in either direction. Source IDs that
+        are absent or not image nodes are reported in missing_source_ids.
+        These fields describe recorded associations only; they do not show
+        that a merge happened or that an extraction was correct.
+
+        Raises ValueError if node_id is not in the graph.
+        """
+        if node_id not in self._g.nodes:
+            raise ValueError(f"Node not found: {node_id}")
+        attrs = self._g.nodes[node_id]
+
+        if attrs.get("type") == "image":
+            source_ids = [node_id]
+        else:
+            source_ids = list(dict.fromkeys(attrs.get("seen_in", [])))
+
+        sources = []
+        missing_source_ids = []
+        for source_id in source_ids:
+            if source_id not in self._g.nodes or self._g.nodes[source_id].get("type") != "image":
+                missing_source_ids.append(source_id)
+                continue
+
+            pairs = [(source_id, node_id)]
+            if source_id != node_id:
+                pairs.append((node_id, source_id))
+            direct_edges = [
+                {
+                    "source": src,
+                    "target": tgt,
+                    "relation": data.get("relation", "unknown"),
+                    "confidence": data.get("confidence"),
+                }
+                for src, tgt in pairs
+                for data in (self._g.get_edge_data(src, tgt) or {}).values()
+            ]
+
+            source_attrs = self._g.nodes[source_id]
+            sources.append({
+                "image_id": source_id,
+                "filename": Path(source_attrs.get("path", source_id)).name,
+                "path": source_attrs.get("path"),
+                "direct_edges": direct_edges,
+            })
+
+        return {
+            "node": {
+                "id": node_id,
+                "type": attrs.get("type", "unknown"),
+                "label": _node_label(node_id, attrs),
+                "confidence": attrs.get("confidence"),
+            },
+            "source_count": len(source_ids),
+            "multi_source": len(source_ids) > 1,
+            "sources": sources,
+            "missing_source_ids": missing_source_ids,
+        }
 
     def summary(self) -> dict:
         """Return high-level graph statistics."""

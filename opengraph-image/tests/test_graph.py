@@ -283,6 +283,97 @@ def test_resolve_image_duplicate_filename_raises():
     assert g.resolve_image("cat_a") == "cat_a"
 
 
+def test_get_provenance_single_source(two_extractions):
+    ext1, _ = two_extractions
+    g = ImageGraph()
+    g.add_extraction(ext1)
+
+    prov = g.get_provenance("img1__tennis_ball_1")
+
+    assert prov == {
+        "node": {"id": "img1__tennis_ball_1", "type": "object", "label": "tennis_ball", "confidence": 0.85},
+        "source_count": 1,
+        "multi_source": False,
+        "sources": [
+            {
+                "image_id": "img1",
+                "filename": "img1.jpg",
+                "path": "/photos/img1.jpg",
+                "direct_edges": [
+                    {"source": "img1", "target": "img1__tennis_ball_1", "relation": "contains", "confidence": 0.85}
+                ],
+            }
+        ],
+        "missing_source_ids": [],
+    }
+
+
+def test_get_provenance_merged_node_keeps_each_edge_confidence(two_extractions):
+    ext1, ext2 = two_extractions
+    g = ImageGraph()
+    g.add_extraction(ext1)
+    g.add_extraction(ext2)
+    g.link_across_images()
+
+    prov = g.get_provenance("img1__golden_retriever_1")
+
+    assert prov["node"]["confidence"] == 0.9
+    assert prov["source_count"] == 2
+    assert prov["multi_source"] is True
+    assert prov["missing_source_ids"] == []
+    assert [s["image_id"] for s in prov["sources"]] == ["img1", "img2"]
+    by_image = {s["image_id"]: s for s in prov["sources"]}
+    assert by_image["img1"]["direct_edges"] == [
+        {"source": "img1", "target": "img1__golden_retriever_1", "relation": "contains", "confidence": 0.9}
+    ]
+    assert by_image["img2"]["direct_edges"] == [
+        {"source": "img2", "target": "img1__golden_retriever_1", "relation": "contains", "confidence": 0.7}
+    ]
+    assert by_image["img2"]["filename"] == "img2.jpg"
+
+
+def test_get_provenance_unknown_node_raises(two_extractions):
+    ext1, _ = two_extractions
+    g = ImageGraph()
+    g.add_extraction(ext1)
+
+    with pytest.raises(ValueError, match="Node not found: no_such_node"):
+        g.get_provenance("no_such_node")
+
+
+def test_get_provenance_reports_missing_source_ids():
+    g = _image_only_graph(("img1", "/photos/img1.jpg"))
+    g._g.add_node("img1__dog_1", type="object", label="dog", seen_in=["img1", "img2", "img1", "img1__dog_1"])
+
+    prov = g.get_provenance("img1__dog_1")
+
+    assert prov["node"]["confidence"] is None
+    # Duplicates are dropped; missing and non-image sources still count.
+    assert prov["source_count"] == 3
+    assert prov["multi_source"] is True
+    assert prov["missing_source_ids"] == ["img2", "img1__dog_1"]
+    # A valid source with no connecting edge reports an empty list.
+    assert prov["sources"] == [
+        {"image_id": "img1", "filename": "img1.jpg", "path": "/photos/img1.jpg", "direct_edges": []}
+    ]
+
+
+def test_get_provenance_keeps_parallel_edges_in_both_directions():
+    g = _image_only_graph(("img1", "/photos/img1.jpg"))
+    g._g.add_node("img1__dog_1", type="object", label="dog", confidence=0.9, seen_in=["img1"])
+    g._g.add_edge("img1", "img1__dog_1", relation="contains", confidence=0.9)
+    g._g.add_edge("img1", "img1__dog_1", relation="contains", confidence=0.6)
+    g._g.add_edge("img1__dog_1", "img1", relation="appears_in", confidence=0.5)
+
+    prov = g.get_provenance("img1__dog_1")
+
+    assert prov["sources"][0]["direct_edges"] == [
+        {"source": "img1", "target": "img1__dog_1", "relation": "contains", "confidence": 0.9},
+        {"source": "img1", "target": "img1__dog_1", "relation": "contains", "confidence": 0.6},
+        {"source": "img1__dog_1", "target": "img1", "relation": "appears_in", "confidence": 0.5},
+    ]
+
+
 def test_build_graph_from_folder_writes_json_and_html(tmp_path, monkeypatch):
     """build_graph_from_folder should produce both graph.json and graph.html,
     without making any real API calls."""
