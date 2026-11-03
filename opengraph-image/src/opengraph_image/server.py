@@ -116,6 +116,21 @@ def get_image_entities(image_filename: str, graph_path: str = "") -> str:
 
 
 @mcp.tool()
+def get_provenance(node_id: str, graph_path: str = "") -> str:
+    """Return the stored source images for an exact graph node ID, with the
+    direct edges between each source image and the node.
+
+    Reads existing graph data only; an unknown node ID returns an error.
+    """
+    try:
+        graph = _load_graph(graph_path)
+        result = graph.get_provenance(node_id)
+        return json.dumps({"status": "ok", **result})
+    except Exception as e:
+        return _error(str(e))
+
+
+@mcp.tool()
 def list_images(graph_path: str = "") -> str:
     """Return the list of image filenames present in the knowledge graph."""
     try:
